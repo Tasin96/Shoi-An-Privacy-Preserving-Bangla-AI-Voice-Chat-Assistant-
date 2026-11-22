@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Optional
 from app.config import settings
 from app.services.rag import rag_service
 from app.services.crisis_detector import detect_crisis
-from app.services.chitchat import get_chitchat_response
+from app.services.chitchat import get_chitchat_response, is_medical_query, get_open_ended_companion_response
 from app.schemas.chat import ChatMessage, ChatResponse
 
 SYSTEM_PROMPT_PATH = os.path.join(
@@ -30,10 +30,11 @@ class LLMService:
         history: Optional[List[ChatMessage]] = None
     ) -> ChatResponse:
         """
-        Executes the full pipeline:
-        1. Layered safety check (crisis detection)
-        2. RAG retrieval over grounded Bangla medical KB
-        3. LLM generation (Gemini, OpenAI, or grounded deterministic medical fallback)
+        Executes the multi-tiered pipeline:
+        1. Layered safety check (crisis & self-harm detection)
+        2. Conversational Intent & Greetings Check (Everyday natural Bangla talk)
+        3. RAG retrieval over grounded Bangla medical KB
+        4. External LLM generation (Gemini, OpenAI) or Grounded Fallback / Companion Engine
         """
         # Step 1: Safety & Crisis Check
         safety_result = detect_crisis(message)
@@ -48,7 +49,7 @@ class LLMService:
                 emergency_payload=safety_result.emergency_payload
             )
 
-        # Step 1.5: Conversational Chitchat & Greetings Check
+        # Step 2: Conversational Chitchat & Everyday Bangla Talk
         chitchat = get_chitchat_response(message)
         if chitchat:
             reply_text, conf = chitchat
@@ -60,49 +61,66 @@ class LLMService:
                 emergency_payload=None
             )
 
-        # Step 2: RAG Retrieval
+        # Step 3: RAG Retrieval for Medical/Health Context
         chunks, is_confident = rag_service.retrieve(message, top_k=2)
-        citations = [f"{c['title']} ({c['source']})" for c in chunks]
+        citations = [f"{c['title']} ({c['source']})" for c in chunks] if is_confident else []
+        context_text = "\n\n".join([f"[{c['title']} - {c['source']}]:\n{c['text']}" for c in chunks]) if chunks else ""
 
-        # If user asks something where we have zero confident medical knowledge
-        if not is_confident and len(chunks) == 0:
-            return ChatResponse(
-                reply=(
-                    "আপু, আপনার এই বিষয়টি সম্পর্কে আমার কাছে সুনির্দিষ্ট চিকিৎসা তথ্য নেই। "
-                    "ভুল তথ্যের কোনো ঝুঁকি না নিয়ে নিকটস্থ কমিউনিটি ক্লিনিক বা স্বাস্থ্যকর্মীর পরামর্শ নেওয়া সবচেয়ে নিরাপদ হবে।"
-                ),
-                citations=[],
-                confidence=0.3,
-                risk_level=safety_result.risk_level
-            )
-
-        # Step 3: Call external LLM or Grounded Fallback
-        context_text = "\n\n".join([f"[{c['title']} - {c['source']}]:\n{c['text']}" for c in chunks])
-        
+        has_llm_key = bool(settings.GEMINI_API_KEY or settings.OPENAI_API_KEY)
         reply_text = None
-        
-        # Try Gemini API if key is present
-        if settings.GEMINI_API_KEY:
-            try:
-                reply_text = await self._call_gemini(message, context_text, history)
-            except Exception as e:
-                print(f"Gemini API call failed: {e}")
-        
-        # Try OpenAI API if key is present
-        if not reply_text and settings.OPENAI_API_KEY:
-            try:
-                reply_text = await self._call_openai(message, context_text, history)
-            except Exception as e:
-                print(f"OpenAI API call failed: {e}")
 
-        # Grounded Medical Response Fallback (Zero-API-key zero-cost high reliability)
+        # Step 4: External LLM Generation if API Keys Available
+        if has_llm_key:
+            if settings.GEMINI_API_KEY:
+                try:
+                    reply_text = await self._call_gemini(message, context_text, history)
+                except Exception as e:
+                    print(f"Gemini API call failed: {e}")
+
+            if not reply_text and settings.OPENAI_API_KEY:
+                try:
+                    reply_text = await self._call_openai(message, context_text, history)
+                except Exception as e:
+                    print(f"OpenAI API call failed: {e}")
+
+        # Step 5: High-Reliability Grounded Fallback & Companion Engine
         if not reply_text:
-            reply_text = self._build_grounded_fallback_reply(message, chunks)
+            if is_confident and chunks:
+                # Grounded medical response from verified WHO/DGHS chunks
+                reply_text = self._build_grounded_fallback_reply(message, chunks)
+                return ChatResponse(
+                    reply=reply_text,
+                    citations=citations,
+                    confidence=0.9,
+                    risk_level=safety_result.risk_level,
+                    emergency_payload=safety_result.emergency_payload
+                )
+            elif is_medical_query(message):
+                # Unrecognized clinical question: safety disclaimer
+                return ChatResponse(
+                    reply=(
+                        "আপু, আপনার এই বিষয়টি সম্পর্কে আমার কাছে সুনির্দিষ্ট চিকিৎসা তথ্য নেই। "
+                        "ভুল তথ্যের কোনো ঝুঁকি না নিয়ে নিকটস্থ কমিউনিটি ক্লিনিক বা স্বাস্থ্যকর্মীর পরামর্শ নেওয়া সবচেয়ে নিরাপদ হবে।"
+                    ),
+                    citations=[],
+                    confidence=0.3,
+                    risk_level=safety_result.risk_level
+                )
+            else:
+                # General everyday conversational remarks
+                companion_reply = get_open_ended_companion_response(message)
+                return ChatResponse(
+                    reply=companion_reply,
+                    citations=[],
+                    confidence=0.85,
+                    risk_level="none",
+                    emergency_payload=None
+                )
 
         return ChatResponse(
             reply=reply_text,
             citations=citations,
-            confidence=0.9 if is_confident else 0.5,
+            confidence=0.9 if is_confident else 0.7,
             risk_level=safety_result.risk_level,
             emergency_payload=safety_result.emergency_payload
         )
@@ -112,14 +130,14 @@ class LLMService:
         
         prompt = (
             f"{self.system_prompt}\n\n"
-            f"=== স্বাস্থ্য তথ্য ও নির্দেশনা (Context) ===\n{context}\n\n"
+            f"=== স্বাস্থ্য তথ্য ও নির্দেশনা (Context) ===\n{context or 'কোনো ক্লিনিক্যাল কনটেক্সট নেই, সাধারণ বন্ধুত্বপূর্ণ আলাপ হিসেবে উত্তর দিন।'}\n\n"
             f"ব্যবহারকারীর প্রশ্ন: {message}\n"
-            f"নির্দেশনা: উপরের তথ্য অনুযায়ী সহজ, উষ্ণ বাংলায় অল্প কথায় উত্তর দিন।"
+            f"নির্দেশনা: একজন কাছের বিশ্বস্ত বন্ধু বা সই হিসেবে সহজ, সাবলীল, উষ্ণ বাংলায় উত্তর দিন।"
         )
         
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"temperature": 0.3, "maxOutputTokens": 300}
+            "generationConfig": {"temperature": 0.4, "maxOutputTokens": 350}
         }
         
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -134,7 +152,7 @@ class LLMService:
         headers = {"Authorization": f"Bearer {settings.OPENAI_API_KEY}"}
         
         messages = [
-            {"role": "system", "content": f"{self.system_prompt}\n\n=== Context ===\n{context}"}
+            {"role": "system", "content": f"{self.system_prompt}\n\n=== Context ===\n{context or 'General friendly conversation.'}"}
         ]
         if history:
             for h in history[-3:]:
@@ -144,8 +162,8 @@ class LLMService:
         payload = {
             "model": settings.OPENAI_MODEL,
             "messages": messages,
-            "temperature": 0.3,
-            "max_tokens": 300
+            "temperature": 0.4,
+            "max_tokens": 350
         }
         
         async with httpx.AsyncClient(timeout=10.0) as client:

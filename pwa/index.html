@@ -52,8 +52,12 @@
 
         <!-- Response Card -->
         <div class="voice-response-card" id="voiceResponseCard" style="display: none;">
+          <div class="user-query-bubble" id="userQueryBubble" style="display: none;">
+            <span class="user-label">আপনি বলেছেন:</span>
+            <p id="userQueryText"></p>
+          </div>
           <div class="card-header">
-            <span class="card-tag">সই-এর উত্তর</span>
+            <span class="card-tag">🌸 সই-এর উত্তর</span>
             <button id="replayVoiceBtn" class="replay-btn" title="পুনরায় শুনুন">🔊 শুনুন</button>
           </div>
           <p class="response-text" id="responseText"></p>
@@ -62,23 +66,26 @@
 
         <!-- Quick Question Chips -->
         <div class="quick-questions">
-          <span class="quick-title">প্রয়োজনীয় সাধারণ প্রশ্ন:</span>
+          <span class="quick-title">🌸 সহজে কথা বলুন বা প্রশ্ন করুন:</span>
           <div class="chips-row">
+            <button class="chip friendly-chip" data-q="আসসালামু আলাইকুম, সই কেমন আছো?">🌸 কেমন আছো সই?</button>
+            <button class="chip friendly-chip" data-q="আমার খুব একা লাগছে, একটু গল্প করো">💬 একটু গল্প করো</button>
+            <button class="chip friendly-chip" data-q="আজ মনটা একটু খারাপ লাগছে">😔 মন ভালো নেই</button>
             <button class="chip" data-q="পিরিয়ডের ব্যথা কমানোর সহজ উপায় কি?">🩸 পিরিয়ডের ব্যথা</button>
             <button class="chip" data-q="পিসিওএস এর সাধারণ লক্ষণ কি কি?">🩺 পিসিওএস লক্ষণ</button>
             <button class="chip" data-q="গর্ভাবস্থার ৫টি প্রধান বিপদচিহ্ন কি কি?">🤰 গর্ভের বিপদচিহ্ন</button>
-            <button class="chip" data-q="পিরিয়ডের সময় কতক্ষণ পর প্যাড বদলাতে হয়?">🌸 পরিচ্ছন্নতা</button>
+            <button class="chip" data-q="পিরিয়ডের সময় কতক্ষণ পর প্যাড বদলাতে হয়?">🌿 পরিচ্ছন্নতা</button>
           </div>
         </div>
 
         <!-- Optional Text Chat Drawer Toggle -->
         <div class="text-chat-toggle-box">
-          <button id="toggleTextChatBtn" class="secondary-toggle-btn">⌨️ লিখে জিজ্ঞাসা করুন</button>
+          <button id="toggleTextChatBtn" class="secondary-toggle-btn">⌨️ লিখে কথা বলুন বা প্রশ্ন করুন</button>
         </div>
 
         <div id="textChatDrawer" class="text-chat-drawer" style="display: none;">
           <div class="chat-input-row">
-            <input type="text" id="chatInput" placeholder="আপনার প্রশ্নটি এখানে লিখুন..." />
+            <input type="text" id="chatInput" placeholder="আপনার কথা বা প্রশ্নটি এখানে লিখুন..." />
             <button id="sendChatBtn" class="send-btn">পাঠান</button>
           </div>
         </div>

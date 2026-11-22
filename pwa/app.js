@@ -19,6 +19,8 @@ const voiceStatus = document.getElementById('voiceStatus');
 const voiceStatusText = document.getElementById('voiceStatusText');
 const micInstruction = document.getElementById('micInstruction');
 const voiceResponseCard = document.getElementById('voiceResponseCard');
+const userQueryBubble = document.getElementById('userQueryBubble');
+const userQueryText = document.getElementById('userQueryText');
 const responseText = document.getElementById('responseText');
 const citationsContainer = document.getElementById('citationsContainer');
 const audioPlayer = document.getElementById('audioPlayer');
@@ -359,12 +361,58 @@ async function sendVoiceAudio(audioBlob) {
   }
 }
 
+function cleanBanglaPhonetics(text) {
+  if (!text) return '';
+  // Remove citations & system notes
+  let t = text.replace(/\([^\)]*সূত্র[^\)]*\)/g, '').replace(/\[[^\]]*সূত্র[^\]]*\]/g, '');
+  t = t.replace(/\(সূত্র:[^\)]*\)/g, '');
+  
+  // English acronyms to Bangla phonetics
+  t = t.replace(/\bPCOS\b|\bpcos\b/gi, 'পিসিওএস');
+  t = t.replace(/\bBMI\b|\bbmi\b/gi, 'বিএমআই');
+  t = t.replace(/\bEDD\b|\bedd\b/gi, 'ইডিডি');
+  t = t.replace(/\bLMP\b|\blmp\b/gi, 'এলএমপি');
+  t = t.replace(/\bAI\b|\bai\b/gi, 'এআই');
+  t = t.replace(/\bSMS\b|\bsms\b/gi, 'এসএমএস');
+  t = t.replace(/\bWHO\b|\bwho\b/gi, 'হু');
+  t = t.replace(/\bDGHS\b|\bdghs\b/gi, 'ডিজিএইচএস');
+  t = t.replace(/\bDr\.?|\bdr\.?/gi, 'ডাক্তার');
+  t = t.replace(/\bapp\b/gi, 'অ্যাপ');
+  t = t.replace(/\b999\b/g, 'নয় নয় নয়');
+  t = t.replace(/\b109\b/g, 'এক শূন্য নয়');
+
+  // Convert English digits to Bengali digits
+  const enToBn = {'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};
+  t = t.replace(/[0-9]/g, digit => enToBn[digit] || digit);
+  t = t.replace(/([০-৯]+)\s*[-–—]\s*([০-৯]+)/g, '$1 থেকে $2');
+
+  // Remove markdown symbols
+  t = t.replace(/[*#`~>\[\]]/g, '');
+  t = t.replace(/[-–—]/g, ', ');
+  return t.trim();
+}
+
 function speakNativeText(text) {
   if ('speechSynthesis' in window) {
-    // Remove citations and markdown symbols before native speech
-    const cleanText = text.replace(/\([^\)]*সূত্র[^\)]*\)/g, '').replace(/[*#\[\]()]/g, '');
+    window.speechSynthesis.cancel();
+    const cleanText = cleanBanglaPhonetics(text);
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'bn-BD';
+    
+    // Pick the most natural female Bangla voice available
+    const voices = window.speechSynthesis.getVoices();
+    const bnVoice = voices.find(v => 
+      v.lang === 'bn-BD' || 
+      v.lang.startsWith('bn') || 
+      v.name.includes('Bangla') || 
+      v.name.includes('Bengali') || 
+      v.name.includes('Nabanita')
+    );
+    if (bnVoice) utterance.voice = bnVoice;
+    
+    utterance.rate = 0.92;
+    utterance.pitch = 1.0;
+    
     setVoiceState('speaking');
     utterance.onend = () => setVoiceState('idle');
     utterance.onerror = () => setVoiceState('idle');
@@ -376,6 +424,16 @@ function displayVoiceResponse(data) {
   lastReplyText = data.reply_text;
   responseText.textContent = data.reply_text;
   voiceResponseCard.style.display = 'block';
+
+  // Display user query if transcript exists
+  if (userQueryBubble && userQueryText) {
+    if (data.transcript && data.transcript.trim()) {
+      userQueryText.textContent = data.transcript;
+      userQueryBubble.style.display = 'block';
+    } else {
+      userQueryBubble.style.display = 'none';
+    }
+  }
 
   // Citations
   if (data.citations && data.citations.length > 0) {

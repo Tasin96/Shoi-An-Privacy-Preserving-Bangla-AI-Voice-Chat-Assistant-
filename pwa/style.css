@@ -252,6 +252,28 @@ body {
   animation: fadeIn 0.3s ease;
 }
 
+.user-query-bubble {
+  background: #FFFFFF;
+  border: 1px solid #F0D5DD;
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.user-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  display: block;
+}
+
+#userQueryText {
+  font-size: 14px;
+  color: var(--primary-dark);
+  font-weight: 500;
+  margin: 2px 0 0 0;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -324,6 +346,17 @@ body {
   background-color: var(--primary-light);
   border-color: var(--primary);
   color: var(--primary-dark);
+}
+
+.friendly-chip {
+  background-color: #FFF0F4;
+  border-color: #F8CAD5;
+  color: #B52B53;
+  font-weight: 500;
+}
+
+.friendly-chip:hover {
+  background-color: #FFE2EA;
 }
 
 /* Text chat toggle drawer */
