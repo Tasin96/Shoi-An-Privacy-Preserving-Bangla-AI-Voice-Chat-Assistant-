@@ -28,6 +28,12 @@ const citationsContainer = document.getElementById('citationsContainer');
 const audioPlayer = document.getElementById('audioPlayer');
 const replayVoiceBtn = document.getElementById('replayVoiceBtn');
 const emergencyModal = document.getElementById('emergencyModal');
+const audioEqualizer = document.getElementById('audioEqualizer');
+const micIcon = document.getElementById('micIcon');
+const voiceSpeedBtn = document.getElementById('voiceSpeedBtn');
+const voiceSuggestionsBox = document.getElementById('voiceSuggestionsBox');
+const voiceSuggestionsContainer = document.getElementById('voiceSuggestionsContainer');
+let isSlowSpeed = localStorage.getItem('shoi_slow_voice') === 'true';
 
 // Non-blocking UI Toast
 function showToast(message, isError = false) {
@@ -80,6 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupPregnancyTracker();
   setupSettings();
   setupQuickQuestions();
+  setupVoiceSpeedToggle();
 });
 
 // Helper for auth headers
@@ -313,9 +320,37 @@ function setupSpeechAndAudioPipeline() {
   });
 }
 
+function setupVoiceSpeedToggle() {
+  if (voiceSpeedBtn) {
+    updateVoiceSpeedUI();
+    voiceSpeedBtn.addEventListener('click', () => {
+      isSlowSpeed = !isSlowSpeed;
+      localStorage.setItem('shoi_slow_voice', isSlowSpeed);
+      updateVoiceSpeedUI();
+      if (audioPlayer) {
+        audioPlayer.playbackRate = isSlowSpeed ? 0.85 : 1.0;
+      }
+      showToast(isSlowSpeed ? '🐢 ধীরগতির কণ্ঠস্বর চালু করা হয়েছে' : '🔊 স্বাভাবিক কণ্ঠস্বর চালু করা হয়েছে');
+    });
+  }
+}
+
+function updateVoiceSpeedUI() {
+  if (!voiceSpeedBtn) return;
+  voiceSpeedBtn.textContent = isSlowSpeed ? '🐢 ধীরগতি' : '🔊 স্বাভাবিক';
+}
+
 function setVoiceState(state) {
   voiceStatus.className = 'voice-status-pill ' + state;
   micWave.className = 'mic-wave' + (state === 'listening' ? ' active' : (state === 'speaking' ? ' speaking' : ''));
+
+  if (state === 'listening' || state === 'speaking') {
+    if (audioEqualizer) audioEqualizer.style.display = 'flex';
+    if (micIcon) micIcon.style.opacity = '0.25';
+  } else {
+    if (audioEqualizer) audioEqualizer.style.display = 'none';
+    if (micIcon) micIcon.style.opacity = '1';
+  }
 
   if (state === 'listening') {
     voiceStatusText.textContent = 'শুনছি... আপনার প্রশ্ন বলুন';
@@ -445,7 +480,7 @@ function speakNativeText(text) {
     );
     if (bnVoice) utterance.voice = bnVoice;
     
-    utterance.rate = 0.92;
+    utterance.rate = isSlowSpeed ? 0.78 : 0.92;
     utterance.pitch = 1.0;
     
     setVoiceState('speaking');
@@ -493,6 +528,7 @@ function displayVoiceResponse(data) {
   if (data.audio_base64) {
     lastAudioBase64 = data.audio_base64;
     audioPlayer.src = `data:audio/mp3;base64,${data.audio_base64}`;
+    audioPlayer.playbackRate = isSlowSpeed ? 0.85 : 1.0;
     setVoiceState('speaking');
     audioPlayer.play().catch(() => {
       // If browser blocks autoplay, user can tap replay button
@@ -501,6 +537,27 @@ function displayVoiceResponse(data) {
     audioPlayer.onended = () => setVoiceState('idle');
   } else {
     speakNativeText(data.reply_text);
+  }
+
+  // Dynamic Follow-up Suggestions
+  if (voiceSuggestionsBox && voiceSuggestionsContainer) {
+    if (data.suggestions && data.suggestions.length > 0) {
+      voiceSuggestionsContainer.innerHTML = '';
+      data.suggestions.forEach(sugText => {
+        const btn = document.createElement('button');
+        btn.className = 'suggested-voice-chip';
+        btn.textContent = sugText;
+        btn.addEventListener('click', () => {
+          primeAudioPlayback();
+          setVoiceState('thinking');
+          sendVoiceQuery(sugText);
+        });
+        voiceSuggestionsContainer.appendChild(btn);
+      });
+      voiceSuggestionsBox.style.display = 'block';
+    } else {
+      voiceSuggestionsBox.style.display = 'none';
+    }
   }
 }
 

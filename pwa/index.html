@@ -39,11 +39,17 @@
             <span id="voiceStatusText">কথা বলতে বোতামে চাপ দিন</span>
           </div>
 
-          <!-- Big Animated Microphone Button -->
+          <!-- Big Animated Microphone Button with Sound Equalizer -->
           <div class="mic-container">
             <div class="mic-wave" id="micWave"></div>
+            <div class="audio-equalizer" id="audioEqualizer" style="display: none;">
+              <span class="eq-bar bar1"></span>
+              <span class="eq-bar bar2"></span>
+              <span class="eq-bar bar3"></span>
+              <span class="eq-bar bar4"></span>
+            </div>
             <button id="micBtn" class="big-mic-button" aria-label="কথা বলুন">
-              <span class="mic-icon">🎙️</span>
+              <span class="mic-icon" id="micIcon">🎙️</span>
             </button>
           </div>
           <p class="mic-instruction" id="micInstruction">মাঝের বোতামটি চেপে আপনার প্রশ্ন বলুন</p>
@@ -60,10 +66,19 @@
           </div>
           <div class="card-header">
             <span class="card-tag">🌸 সই-এর উত্তর</span>
-            <button id="replayVoiceBtn" class="replay-btn" title="পুনরায় শুনুন">🔊 শুনুন</button>
+            <div class="card-voice-actions">
+              <button id="voiceSpeedBtn" class="speed-toggle-btn" title="কণ্ঠস্বরের গতি পরিবর্তন">🔊 স্বাভাবিক</button>
+              <button id="replayVoiceBtn" class="replay-btn" title="পুনরায় শুনুন">🔊 শুনুন</button>
+            </div>
           </div>
           <p class="response-text" id="responseText"></p>
           <div class="citations-container" id="citationsContainer"></div>
+
+          <!-- Dynamic Spoken Follow-up Suggestions -->
+          <div class="voice-suggestions-box" id="voiceSuggestionsBox" style="display: none;">
+            <span class="suggestions-title">💡 আরও জানতে পারেন:</span>
+            <div class="suggestions-chips-row" id="voiceSuggestionsContainer"></div>
+          </div>
           
           <!-- Direct Emergency Hotline Calling Box -->
           <div id="emergencyInlineBox" class="emergency-inline-box" style="display: none;">

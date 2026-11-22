@@ -25,3 +25,6 @@ class VoiceResponse(BaseModel):
     risk_level: str = "none"
     emergency_payload: Optional[EmergencyPayload] = None
     session_id: Optional[str] = None
+    suggestions: List[str] = Field(default_factory=list)
+    detected_topic: Optional[str] = None
+    turn_count: int = 1

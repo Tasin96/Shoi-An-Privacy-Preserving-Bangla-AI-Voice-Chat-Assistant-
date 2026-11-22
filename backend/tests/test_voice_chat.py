@@ -110,3 +110,26 @@ def test_voice_api_with_session():
     assert data["session_id"] is not None
     assert "সই" in data["reply_text"] or "ভালো" in data["reply_text"]
     assert data["audio_base64"] is not None
+    assert len(data.get("suggestions", [])) >= 1
+    assert data.get("turn_count", 0) >= 1
+
+def test_long_horizon_session_context():
+    mem = SessionMemory(max_turns=15, ttl_seconds=86400)
+    sid = "long_horizon_user_42"
+    
+    mem.add_turn(sid, "আমার মাসিকের সময় তলপেট অনেক ব্যথা করে", "গরম পানির সেঁক নিন")
+    ctx = mem.get_session_context(sid)
+    assert ctx["turn_count"] == 1
+    assert ctx["last_topic"] == "menstrual_pain"
+    assert "ব্যথা" in ctx["recent_symptoms"]
+    assert len(mem.get_history(sid)) == 2
+
+def test_colloquial_dialect_normalization():
+    from app.services.rag import normalize_bangla_text
+    raw1 = "আমার তলপেট খুব চাবায় আর কামড়ায়"
+    norm1 = normalize_bangla_text(raw1)
+    assert "ব্যথা" in norm1
+
+    raw2 = "গা মেজমেজ করে আর জর জর লাগে"
+    norm2 = normalize_bangla_text(raw2)
+    assert "দুর্বলতা" in norm2 or "জ্বর" in norm2

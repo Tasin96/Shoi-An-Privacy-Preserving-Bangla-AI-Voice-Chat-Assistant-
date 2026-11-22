@@ -1,6 +1,7 @@
 import os
 import json
 import math
+import re
 import unicodedata
 from typing import List, Dict, Any, Tuple
 from collections import Counter
@@ -18,10 +19,11 @@ BANGLA_STOPWORDS = {
 
 def normalize_bangla_text(text: str) -> str:
     """
-    Normalizes Bengali Unicode representations:
+    Normalizes Bengali Unicode representations and regional / colloquial variants:
     - Normalizes decomposed ya (\u09af\u09bc -> \u09df)
     - Normalizes decomposed da/rha (\u09a1\u09bc -> \u09dc, \u09a2\u09bc -> \u09dd)
     - Standardizes NFC/NFKC forms
+    - Maps regional / dialectal symptom expressions to standard terms
     """
     if not text:
         return ""
@@ -30,6 +32,24 @@ def normalize_bangla_text(text: str) -> str:
     text = text.replace("\u09a1\u09bc", "\u09dc")  # ড + ় -> ড়
     text = text.replace("\u09a2\u09bc", "\u09dd")  # ঢ + ় -> ঢ়
     text = text.replace("িয়া", "িয়া")
+
+    # Colloquial & regional dialect expansions for rural speech
+    colloquial_map = [
+        (r'\bকামড়ায়\b|\bচাবায়\b|\bব্যথা করতাছে\b', 'ব্যথা'),
+        (r'\bজর জর\b|\bগা গরম\b', 'জ্বর'),
+        (r'\bম্যাজম্যাজ\b|\bমেজমেজ\b', 'দুর্বলতা ক্লান্তি'),
+        (r'\bঘুরায়\b|\bচক্কর দেয়\b', 'ঘোরা'),
+        (r'\bবমিবমি\b|\bবমি ভাব\b', 'বমি'),
+        (r'\bঘুম ধরে না\b|\bঘুম আয় না\b', 'ঘুম আসে না'),
+        (r'\bসাদা পানি\b|\bপানি ভাঙ্গে\b', 'সাদা স্রাব'),
+        (r'\bপ্রস্রাব জ্বলে\b', 'প্রস্রাবে জ্বালাপোড়া'),
+        (r'\bমনডা\b', 'মন'),
+        (r'\bলাগতাছে না\b', 'লাগছে না'),
+        (r'\bকান্দন আসে\b|\bকান্দন পায়\b', 'কান্না পায়'),
+    ]
+    for pattern, repl in colloquial_map:
+        text = re.sub(pattern, repl, text)
+
     return text
 
 class BanglaRAGService:

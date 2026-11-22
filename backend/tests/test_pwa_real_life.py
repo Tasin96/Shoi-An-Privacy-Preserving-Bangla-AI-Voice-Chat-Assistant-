@@ -51,3 +51,14 @@ def test_anonymous_auth_and_period_logging():
     get_resp = client.get("/track/period", headers=headers)
     assert get_resp.status_code == 200
     assert len(get_resp.json()) >= 1
+
+def test_dom_id_consistency():
+    import re
+    from pathlib import Path
+    html_text = Path("pwa/index.html").read_text(encoding="utf-8")
+    js_text = Path("pwa/app.js").read_text(encoding="utf-8")
+    js_ids = set(re.findall(r"document\.getElementById\(['\"]([^'\"]+)['\"]\)", js_text))
+    html_ids = set(re.findall(r"id=['\"]([^'\"]+)['\"]", html_text))
+    # shoiToast is dynamically created if not present
+    missing = (js_ids - html_ids) - {"shoiToast"}
+    assert len(missing) == 0, f"Missing IDs in HTML: {missing}"

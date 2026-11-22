@@ -210,6 +210,103 @@ body {
   animation: speakingPulse 1.2s infinite ease-in-out;
 }
 
+/* Sound Equalizer Animation */
+.audio-equalizer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.eq-bar {
+  width: 5px;
+  height: 24px;
+  background-color: #ffffff;
+  border-radius: 3px;
+  animation: eqBounce 0.9s infinite ease-in-out;
+}
+
+.eq-bar.bar1 { animation-delay: 0.1s; height: 18px; }
+.eq-bar.bar2 { animation-delay: 0.3s; height: 32px; }
+.eq-bar.bar3 { animation-delay: 0.2s; height: 26px; }
+.eq-bar.bar4 { animation-delay: 0.4s; height: 20px; }
+
+@keyframes eqBounce {
+  0%, 100% { transform: scaleY(0.4); opacity: 0.6; }
+  50% { transform: scaleY(1.4); opacity: 1; }
+}
+
+/* Card Voice Actions & Speed Toggle */
+.card-voice-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.speed-toggle-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.speed-toggle-btn:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* Dynamic Spoken Follow-up Suggestions */
+.voice-suggestions-box {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(196, 91, 122, 0.25);
+}
+
+.suggestions-title {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.suggestions-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggested-voice-chip {
+  background: #fff;
+  border: 1px solid rgba(196, 91, 122, 0.3);
+  color: #4a3e3d;
+  border-radius: 18px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+  transition: all 0.2s ease;
+}
+
+.suggested-voice-chip:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
 @keyframes speakingPulse {
   0% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 0 0 rgba(216, 50, 112, 0.5); }
   50% { transform: scale(1.22); opacity: 0.35; box-shadow: 0 0 25px 10px rgba(216, 50, 112, 0.25); }
