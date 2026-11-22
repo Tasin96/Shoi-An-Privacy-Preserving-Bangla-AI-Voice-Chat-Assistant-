@@ -5,6 +5,7 @@ from app.config import settings
 from app.services.rag import rag_service
 from app.services.crisis_detector import detect_crisis
 from app.services.chitchat import get_chitchat_response, is_medical_query, get_open_ended_companion_response
+from app.services.emotional_intelligence import analyze_female_emotion, build_emotional_comfort_response
 from app.schemas.chat import ChatMessage, ChatResponse
 
 SYSTEM_PROMPT_PATH = os.path.join(
@@ -36,17 +37,30 @@ class LLMService:
         3. RAG retrieval over grounded Bangla medical KB
         4. External LLM generation (Gemini, OpenAI) or Grounded Fallback / Companion Engine
         """
-        # Step 1: Safety & Crisis Check
+        # Step 1: Safety & Crisis Check (Suicide & Self-Harm)
         safety_result = detect_crisis(message)
         if safety_result.risk_level == "high":
             return ChatResponse(
                 reply=(
-                    "আপু, আপনার কষ্ট আমরা বুঝতে পারছি। আপনি একা নন। "
-                    "অনুগ্রহ করে নিজের কোনো ক্ষতি করবেন না। এখনই নিচের বাটনে চাপ দিয়ে সাহায্য পাওয়ার ব্যবস্থা করুন।"
+                    "আপু, আপনার কষ্ট আমরা বুঝতে পারছি। আপনি একা নন, আপনার জীবন অত্যন্ত মূল্যবান। "
+                    "অনুগ্রহ করে নিজের কোনো ক্ষতি করবেন না। নিচের লাল বোতামটিতে চাপ দিলে আপনার ফোন থেকে সরাসরি ৯৯৯ নম্বরে ফ্রিতে কল চলে যাবে। "
+                    "আমরা এবং সাহায্যকারী দল আপনার পাশে আছি।"
                 ),
                 confidence=1.0,
                 risk_level="high",
                 emergency_payload=safety_result.emergency_payload
+            )
+
+        # Step 1.5: Female Emotional Intelligence & Cause-Aware Motivational Stories
+        emotion_ctx = analyze_female_emotion(message)
+        if emotion_ctx:
+            comfort_reply = build_emotional_comfort_response(emotion_ctx)
+            return ChatResponse(
+                reply=comfort_reply,
+                citations=[],
+                confidence=0.95,
+                risk_level="none",
+                emergency_payload=None
             )
 
         # Step 2: Conversational Chitchat & Everyday Bangla Talk

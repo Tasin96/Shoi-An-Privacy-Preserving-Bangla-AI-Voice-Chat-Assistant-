@@ -775,7 +775,99 @@ body {
 .call-btn-999 {
   background-color: var(--accent-emergency);
   color: #fff;
-  box-shadow: 0 4px 15px rgba(217, 56, 58, 0.3);
+  box-shadow: 0 4px 15px rgba(217, 56, 58, 0.4);
+  animation: pulseEmergency 2s infinite;
+}
+
+@keyframes pulseEmergency {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(217, 56, 58, 0.6); }
+  70% { transform: scale(1.02); box-shadow: 0 0 0 14px rgba(217, 56, 58, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(217, 56, 58, 0); }
+}
+
+/* Inline Emergency Box inside Chat Card */
+.emergency-inline-box {
+  background: #FFF1F1;
+  border: 2px solid #FFAEB0;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 16px;
+  animation: fadeIn 0.3s ease;
+}
+
+.emergency-inline-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.emergency-inline-header h4 {
+  color: #C01C28;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.emergency-inline-icon {
+  font-size: 20px;
+}
+
+.emergency-inline-text {
+  font-size: 13px;
+  color: #4A1517;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.emergency-inline-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.direct-call-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.15s, background-color 0.2s;
+}
+
+.direct-call-btn:active {
+  transform: scale(0.97);
+}
+
+.call-999-btn {
+  background: #D9383A;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(217, 56, 58, 0.35);
+  animation: pulseEmergency 2.2s infinite;
+}
+
+.call-109-btn {
+  background: #FFFFFF;
+  color: #C01C28;
+  border: 1.5px solid #FFCDD2;
+}
+
+.phone-anim {
+  font-size: 18px;
+  display: inline-block;
+  animation: shakePhone 2s infinite ease-in-out;
+}
+
+@keyframes shakePhone {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30% { transform: rotate(-15deg); }
+  20%, 40% { transform: rotate(15deg); }
+  50% { transform: rotate(0deg); }
 }
 
 .call-btn-109 {

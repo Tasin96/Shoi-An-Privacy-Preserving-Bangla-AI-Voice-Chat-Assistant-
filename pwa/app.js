@@ -443,8 +443,12 @@ function displayVoiceResponse(data) {
   }
 
   // Safety trigger
+  const emergencyInlineBox = document.getElementById('emergencyInlineBox');
   if (data.risk_level === 'high' || (data.emergency_payload && data.emergency_payload.is_emergency)) {
-    emergencyModal.style.display = 'flex';
+    if (emergencyInlineBox) emergencyInlineBox.style.display = 'block';
+    if (emergencyModal) emergencyModal.style.display = 'flex';
+  } else {
+    if (emergencyInlineBox) emergencyInlineBox.style.display = 'none';
   }
 
   // Audio Playback
