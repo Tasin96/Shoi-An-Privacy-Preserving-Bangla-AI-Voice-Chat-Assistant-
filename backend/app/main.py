@@ -77,3 +77,21 @@ if os.path.exists(PWA_DIR):
         if os.path.exists(index_file):
             return FileResponse(index_file)
         return {"message": "Shoi API is running."}
+
+    @app.get("/manifest.json")
+    def serve_manifest():
+        manifest_file = os.path.join(PWA_DIR, "manifest.json")
+        if os.path.exists(manifest_file):
+            return FileResponse(manifest_file, media_type="application/manifest+json")
+        return Response(status_code=404)
+
+    @app.get("/service-worker.js")
+    def serve_service_worker():
+        sw_file = os.path.join(PWA_DIR, "service-worker.js")
+        if os.path.exists(sw_file):
+            return FileResponse(
+                sw_file,
+                media_type="application/javascript",
+                headers={"Service-Worker-Allowed": "/"}
+            )
+        return Response(status_code=404)

@@ -64,8 +64,10 @@ function primeAudioPlayback() {
 document.addEventListener('DOMContentLoaded', async () => {
   // Register Service Worker for PWA offline caching
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/pwa/service-worker.js').catch((err) => {
-      console.log('SW registration note:', err);
+    navigator.serviceWorker.register('/service-worker.js').catch(() => {
+      navigator.serviceWorker.register('/pwa/service-worker.js').catch((err) => {
+        console.log('SW registration note:', err);
+      });
     });
   }
 

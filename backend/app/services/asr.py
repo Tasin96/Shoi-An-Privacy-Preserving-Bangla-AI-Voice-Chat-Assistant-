@@ -34,10 +34,36 @@ def transcribe_audio(audio_bytes: bytes, filename: str = "voice.wav") -> Tuple[s
             transcript = result.get("text", "").strip()
             confidence = 0.85
         except (ImportError, Exception) as e:
-            # Fallback for lightweight / test environments
-            # When testing or without PyTorch whisper installed:
-            transcript = "আমার মাসিকের সময় খুব তলপেটে ব্যথা হয়"
-            confidence = 0.80
+            # Fallback 1: Gemini 1.5 Flash Audio transcription if API key is configured
+            from app.config import settings
+            if settings.GEMINI_API_KEY:
+                try:
+                    import base64
+                    import httpx
+                    b64_audio = base64.b64encode(audio_bytes).decode('utf-8')
+                    mime = "audio/webm" if filename.endswith(".webm") else "audio/wav"
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+                    payload = {
+                        "contents": [{
+                            "parts": [
+                                {"text": "Transcribe this audio recording into exact Bengali (Bangla) text. Return ONLY the spoken words in Bengali script without any translation or notes."},
+                                {"inline_data": {"mime_type": mime, "data": b64_audio}}
+                            ]
+                        }]
+                    }
+                    with httpx.Client(timeout=8.0) as client:
+                        resp = client.post(url, json=payload)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            transcript = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                            confidence = 0.90
+                except Exception as g_err:
+                    print(f"[ASR] Cloud transcription fallback error: {g_err}")
+
+            # If transcription is still empty, do not invent a fake medical query
+            if not transcript:
+                transcript = ""
+                confidence = 0.0
     finally:
         # Strict privacy rule: delete audio file immediately
         if os.path.exists(temp_path):

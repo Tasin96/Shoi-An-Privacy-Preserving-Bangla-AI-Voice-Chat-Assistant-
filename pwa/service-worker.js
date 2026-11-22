@@ -1,10 +1,13 @@
-const CACHE_NAME = 'shoi-cache-v1';
+const CACHE_NAME = 'shoi-cache-v2';
 const ASSETS = [
   '/',
   '/pwa/index.html',
   '/pwa/style.css',
   '/pwa/app.js',
-  '/pwa/manifest.json'
+  '/pwa/manifest.json',
+  '/pwa/icon.svg',
+  '/pwa/icon-192.png',
+  '/pwa/icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {
