@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shoi_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=Shoi
+      - DATABASE_URL=sqlite:////app/data/shoi.db
+      - SECRET_KEY=super-secret-key-change-in-production-shoi-bn-2026
+      - TTS_ENGINE=edge-tts
+      - LLM_PROVIDER=gemini
+    volumes:
+      - shoi_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  shoi_data:
