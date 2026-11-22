@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Request, UploadFile, File, Form, HTTPException, status
 from typing import Optional
+import uuid
 from app.schemas.chat import VoiceResponse
 from app.services.asr import transcribe_audio
 from app.services.llm import llm_service
 from app.services.tts import text_to_speech_base64
+from app.services.session_memory import session_memory
 
 router = APIRouter(prefix="/voice", tags=["Voice First Pipeline"])
 
@@ -22,6 +24,7 @@ async def process_voice_message(
     5. Returns transcript, reply text, and base64 audio for instant playback
     """
     transcript = ""
+    session_id = request.headers.get("x-session-id") or ""
 
     # Check if request is JSON body
     content_type = request.headers.get("content-type", "")
@@ -30,8 +33,13 @@ async def process_voice_message(
             body = await request.json()
             transcript = body.get("direct_transcript") or body.get("message") or body.get("text") or body.get("query") or ""
             transcript = transcript.strip()
+            if not session_id and body.get("session_id"):
+                session_id = body.get("session_id")
         except Exception:
             pass
+
+    if not session_id:
+        session_id = str(uuid.uuid4())
 
     if not transcript:
         if audio_file:
@@ -53,11 +61,18 @@ async def process_voice_message(
             reply_text=fallback_msg,
             audio_base64=audio_b64,
             citations=[],
-            risk_level="none"
+            risk_level="none",
+            session_id=session_id
         )
 
-    # Generate grounded response
-    chat_resp = await llm_service.generate_response(message=transcript)
+    # Multi-turn context memory
+    history = session_memory.get_history(session_id)
+
+    # Generate grounded response with multi-turn continuity
+    chat_resp = await llm_service.generate_response(message=transcript, history=history)
+
+    # Record turn into ephemeral in-memory session
+    session_memory.add_turn(session_id, transcript, chat_resp.reply)
 
     # Synthesize Bangla speech reply
     audio_b64 = await text_to_speech_base64(chat_resp.reply)
@@ -68,5 +83,6 @@ async def process_voice_message(
         audio_base64=audio_b64,
         citations=chat_resp.citations or [],
         risk_level=chat_resp.risk_level,
-        emergency_payload=chat_resp.emergency_payload
+        emergency_payload=chat_resp.emergency_payload,
+        session_id=session_id
     )

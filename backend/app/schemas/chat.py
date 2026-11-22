@@ -24,3 +24,4 @@ class VoiceResponse(BaseModel):
     citations: List[str] = Field(default_factory=list)
     risk_level: str = "none"
     emergency_payload: Optional[EmergencyPayload] = None
+    session_id: Optional[str] = None

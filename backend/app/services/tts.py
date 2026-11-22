@@ -49,6 +49,15 @@ def normalize_bangla_speech_text(text: str) -> str:
         (r'\bclinic\b|\bClinic\b', 'ক্লিনিক'),
         (r'\bhospital\b|\bHospital\b', 'হাসপাতাল'),
         (r'\bdoctor\b|\bDoctor\b', 'ডাক্তার'),
+        (r'\btest\b|\bTest\b', 'টেস্ট'),
+        (r'\bcheckup\b|\bCheckup\b', 'চেকআপ'),
+        (r'\bnormal\b|\bNormal\b', 'নরমাল'),
+        (r'\bultrasound\b|\bUltrasound\b|\bUSG\b|\busg\b', 'আল্ট্রাসনোগ্রাম'),
+        (r'\bcalcium\b|\bCalcium\b', 'ক্যালসিয়াম'),
+        (r'\biron\b|\bIron\b', 'আয়রন'),
+        (r'\bfolic acid\b|\bFolic Acid\b', 'ফলিক অ্যাসিড'),
+        (r'\bdiaper\b|\bDiaper\b', 'ডায়াপার'),
+        (r'\bsaline\b|\bSaline\b', 'স্যালাইন'),
     ]
     for pattern, replacement in phonetic_map:
         text = re.sub(pattern, replacement, text)
@@ -70,6 +79,10 @@ def normalize_bangla_speech_text(text: str) -> str:
 
     # Expand ranges like '১-২ দিন' or '২১-৩৫ দিন' to '১ থেকে ২ দিন'
     text = re.sub(r'([০-৯]+)\s*[-–—]\s*([০-৯]+)', r'\1 থেকে \2', text)
+
+    # Conversational vocative micro-pauses for tender, human sisterly cadence
+    # e.g., "আপু শোনো" -> "আপু, শোনো"
+    text = re.sub(r'\b(আপু|শোনো|মনে রেখো|দেখো|আচ্ছা|হ্যাঁ)\s+(?![!,?.।])', r'\1, ', text)
 
     # Strip markdown symbols and formatting
     text = text.replace('*', '').replace('#', '').replace('`', '').replace('~', '').replace('>', '')

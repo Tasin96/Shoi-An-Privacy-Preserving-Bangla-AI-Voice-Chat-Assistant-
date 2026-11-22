@@ -4,6 +4,8 @@ const API_BASE = window.location.origin;
 // State
 let token = localStorage.getItem('shoi_token') || null;
 let userId = localStorage.getItem('shoi_user_id') || null;
+let sessionId = localStorage.getItem('shoi_session_id') || ('shoi_sess_' + Math.random().toString(36).substring(2, 12));
+localStorage.setItem('shoi_session_id', sessionId);
 let lastAudioBase64 = null;
 let lastReplyText = null;
 let recognition = null;
@@ -191,6 +193,19 @@ function setupSpeechAndAudioPipeline() {
   micBtn.addEventListener('click', async () => {
     primeAudioPlayback();
 
+    // If currently speaking, interrupt and stop audio immediately
+    if (voiceStatus.className.includes('speaking')) {
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      setVoiceState('idle');
+      return;
+    }
+
     // If currently recording, stop
     if (isRecording) {
       if (recognition) {
@@ -298,7 +313,7 @@ function setupSpeechAndAudioPipeline() {
 
 function setVoiceState(state) {
   voiceStatus.className = 'voice-status-pill ' + state;
-  micWave.className = 'mic-wave' + (state === 'listening' ? ' active' : '');
+  micWave.className = 'mic-wave' + (state === 'listening' ? ' active' : (state === 'speaking' ? ' speaking' : ''));
 
   if (state === 'listening') {
     voiceStatusText.textContent = 'শুনছি... আপনার প্রশ্ন বলুন';
@@ -308,7 +323,7 @@ function setVoiceState(state) {
     micInstruction.textContent = 'তথ্য যাচাই করা হচ্ছে...';
   } else if (state === 'speaking') {
     voiceStatusText.textContent = 'বলছি... শুনুন';
-    micInstruction.textContent = 'সই কথা বলছে';
+    micInstruction.textContent = 'থামাতে বোতামে আবার চাপ দিন';
   } else {
     voiceStatusText.textContent = 'কথা বলতে বোতামে চাপ দিন';
     micInstruction.textContent = 'মাঝের বোতামটি চেপে আপনার প্রশ্ন বলুন';
@@ -319,12 +334,22 @@ async function sendVoiceQuery(textQuery) {
   try {
     const res = await fetch(`${API_BASE}/voice`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ direct_transcript: textQuery })
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Session-ID': sessionId
+      },
+      body: JSON.stringify({
+        direct_transcript: textQuery,
+        session_id: sessionId
+      })
     });
 
     if (res.ok) {
       const data = await res.json();
+      if (data.session_id) {
+        sessionId = data.session_id;
+        localStorage.setItem('shoi_session_id', sessionId);
+      }
       displayVoiceResponse(data);
     } else {
       setVoiceState('idle');
@@ -341,14 +366,22 @@ async function sendVoiceAudio(audioBlob) {
   try {
     const formData = new FormData();
     formData.append('audio_file', audioBlob, 'voice_query.webm');
+    formData.append('session_id', sessionId);
 
     const res = await fetch(`${API_BASE}/voice`, {
       method: 'POST',
+      headers: {
+        'X-Session-ID': sessionId
+      },
       body: formData
     });
 
     if (res.ok) {
       const data = await res.json();
+      if (data.session_id) {
+        sessionId = data.session_id;
+        localStorage.setItem('shoi_session_id', sessionId);
+      }
       displayVoiceResponse(data);
     } else {
       setVoiceState('idle');
@@ -424,6 +457,9 @@ function displayVoiceResponse(data) {
   lastReplyText = data.reply_text;
   responseText.textContent = data.reply_text;
   voiceResponseCard.style.display = 'block';
+  setTimeout(() => {
+    voiceResponseCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
 
   // Display user query if transcript exists
   if (userQueryBubble && userQueryText) {

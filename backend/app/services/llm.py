@@ -75,8 +75,15 @@ class LLMService:
                 emergency_payload=None
             )
 
+        # Multi-turn context resolution for short voice follow-ups
+        effective_query = message
+        if history and len(message.strip().split()) <= 5:
+            last_user_msg = next((h.content for h in reversed(history) if h.role == "user"), None)
+            if last_user_msg:
+                effective_query = f"{last_user_msg} {message}"
+
         # Step 3: RAG Retrieval for Medical/Health Context
-        chunks, is_confident = rag_service.retrieve(message, top_k=2)
+        chunks, is_confident = rag_service.retrieve(effective_query, top_k=2)
         citations = [f"{c['title']} ({c['source']})" for c in chunks] if is_confident else []
         context_text = "\n\n".join([f"[{c['title']} - {c['source']}]:\n{c['text']}" for c in chunks]) if chunks else ""
 
