@@ -1,0 +1,17 @@
+{
+  "name": "Shoi - সই",
+  "short_name": "Shoi",
+  "description": "Privacy-preserving Bangla Voice Health Assistant for Women",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDF8F5",
+  "theme_color": "#C45B7A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%23C45B7A'/><path d='M50 30 C35 15, 15 35, 50 75 C85 35, 65 15, 50 30 Z' fill='white'/></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

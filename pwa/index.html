@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>সই (Shoi) — স্বাস্থ্য সঙ্গী</title>
+  <link rel="manifest" href="/pwa/manifest.json">
+  <meta name="theme-color" content="#C45B7A">
+  <link rel="stylesheet" href="/pwa/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Bar -->
+    <header class="app-header">
+      <div class="header-left">
+        <span class="logo-icon">🌸</span>
+        <div class="app-title-group">
+          <h1>সই (Shoi)</h1>
+          <span class="privacy-badge">🔒 সম্পূর্ণ গোপন ও নিরাপদ</span>
+        </div>
+      </div>
+      <button id="emergencyTriggerBtn" class="emergency-quick-btn" title="জরুরি সহায়তা">
+        🚨 জরুরি
+      </button>
+    </header>
+
+    <!-- Main Screens Container -->
+    <main class="content-area">
+      <!-- 1. Voice Screen (Default) -->
+      <section id="screen-voice" class="screen active">
+        <div class="voice-hero">
+          <div class="voice-status-pill" id="voiceStatus">
+            <span class="status-dot"></span>
+            <span id="voiceStatusText">কথা বলতে বোতামে চাপ দিন</span>
+          </div>
+
+          <!-- Big Animated Microphone Button -->
+          <div class="mic-container">
+            <div class="mic-wave" id="micWave"></div>
+            <button id="micBtn" class="big-mic-button" aria-label="কথা বলুন">
+              <span class="mic-icon">🎙️</span>
+            </button>
+          </div>
+          <p class="mic-instruction" id="micInstruction">মাঝের বোতামটি চেপে আপনার প্রশ্ন বলুন</p>
+        </div>
+
+        <!-- Audio Player Indicator -->
+        <audio id="audioPlayer" style="display:none;"></audio>
+
+        <!-- Response Card -->
+        <div class="voice-response-card" id="voiceResponseCard" style="display: none;">
+          <div class="card-header">
+            <span class="card-tag">সই-এর উত্তর</span>
+            <button id="replayVoiceBtn" class="replay-btn" title="পুনরায় শুনুন">🔊 শুনুন</button>
+          </div>
+          <p class="response-text" id="responseText"></p>
+          <div class="citations-container" id="citationsContainer"></div>
+        </div>
+
+        <!-- Quick Question Chips -->
+        <div class="quick-questions">
+          <span class="quick-title">প্রয়োজনীয় সাধারণ প্রশ্ন:</span>
+          <div class="chips-row">
+            <button class="chip" data-q="পিরিয়ডের ব্যথা কমানোর সহজ উপায় কি?">🩸 পিরিয়ডের ব্যথা</button>
+            <button class="chip" data-q="পিসিওএস এর সাধারণ লক্ষণ কি কি?">🩺 পিসিওএস লক্ষণ</button>
+            <button class="chip" data-q="গর্ভাবস্থার ৫টি প্রধান বিপদচিহ্ন কি কি?">🤰 গর্ভের বিপদচিহ্ন</button>
+            <button class="chip" data-q="পিরিয়ডের সময় কতক্ষণ পর প্যাড বদলাতে হয়?">🌸 পরিচ্ছন্নতা</button>
+          </div>
+        </div>
+
+        <!-- Optional Text Chat Drawer Toggle -->
+        <div class="text-chat-toggle-box">
+          <button id="toggleTextChatBtn" class="secondary-toggle-btn">⌨️ লিখে জিজ্ঞাসা করুন</button>
+        </div>
+
+        <div id="textChatDrawer" class="text-chat-drawer" style="display: none;">
+          <div class="chat-input-row">
+            <input type="text" id="chatInput" placeholder="আপনার প্রশ্নটি এখানে লিখুন..." />
+            <button id="sendChatBtn" class="send-btn">পাঠান</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Period Tracker Screen -->
+      <section id="screen-period" class="screen">
+        <div class="screen-header">
+          <h2>🩸 পিরিয়ড ট্র্যাকার</h2>
+          <p>আপনার মাসিক চক্রের হিসাব ও পূর্বাভাস</p>
+        </div>
+
+        <!-- Prediction Alert Box -->
+        <div class="card prediction-card" id="periodPredictionCard">
+          <h3>পরবর্তী পিরিয়ডের পূর্বাভাস</h3>
+          <div class="prediction-info" id="predictionInfo">
+            তথ্য লোড হচ্ছে...
+          </div>
+        </div>
+
+        <!-- Log Period Form -->
+        <div class="card log-card">
+          <h3>নতুন পিরিয়ড রেকর্ড করুন</h3>
+          <form id="periodForm">
+            <div class="form-group">
+              <label>শুরুর তারিখ</label>
+              <input type="date" id="periodStartDate" required>
+            </div>
+            <div class="form-group">
+              <label>শেষের তারিখ (ঐচ্ছিক)</label>
+              <input type="date" id="periodEndDate">
+            </div>
+            <div class="form-group">
+              <label>রক্তস্রাবের মাত্রা (Flow)</label>
+              <div class="flow-selector">
+                <label><input type="radio" name="flow" value="light"> হালকা</label>
+                <label><input type="radio" name="flow" value="medium" checked> স্বাভাবিক</label>
+                <label><input type="radio" name="flow" value="heavy"> ভারী</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>শারীরিক লক্ষণ</label>
+              <div class="symptom-tags">
+                <label class="tag-checkbox"><input type="checkbox" value="তলপেটে ব্যথা"> তলপেটে ব্যথা</label>
+                <label class="tag-checkbox"><input type="checkbox" value="কোমর ব্যথা"> কোমর ব্যথা</label>
+                <label class="tag-checkbox"><input type="checkbox" value="মাথাব্যথা"> মাথাব্যথা</label>
+                <label class="tag-checkbox"><input type="checkbox" value="বমি ভাব"> বমি ভাব</label>
+                <label class="tag-checkbox"><input type="checkbox" value="মেজাজ খিটখিটে"> মেজাজ খিটখিটে</label>
+              </div>
+            </div>
+            <button type="submit" class="primary-btn">সংরক্ষণ করুন</button>
+          </form>
+        </div>
+
+        <!-- Historical List -->
+        <div class="card history-card">
+          <h3>পূর্ববর্তী চক্রের তালিকা</h3>
+          <ul id="periodList" class="history-list">
+            <li>লোড হচ্ছে...</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 3. Mood Tracker Screen -->
+      <section id="screen-mood" class="screen">
+        <div class="screen-header">
+          <h2>😊 মনের যত্ন ও ট্র্যাকার</h2>
+          <p>আজ আপনার মন কেমন? নিজের মনের খোঁজ নিন</p>
+        </div>
+
+        <div class="card mood-input-card">
+          <h3>আজকের অনুভূতি বেছে নিন</h3>
+          <div class="emoji-selector">
+            <button class="emoji-btn" data-score="5" title="খুব ভালো">
+              <span class="emoji">🤩</span>
+              <span class="emoji-label">দারুণ</span>
+            </button>
+            <button class="emoji-btn" data-score="4" title="ভালো">
+              <span class="emoji">😊</span>
+              <span class="emoji-label">ভালো</span>
+            </button>
+            <button class="emoji-btn selected" data-score="3" title="স্বাভাবিক">
+              <span class="emoji">😐</span>
+              <span class="emoji-label">স্বাভাবিক</span>
+            </button>
+            <button class="emoji-btn" data-score="2" title="মন খারাপ">
+              <span class="emoji">😔</span>
+              <span class="emoji-label">মন খারাপ</span>
+            </button>
+            <button class="emoji-btn" data-score="1" title="খুব খারাপ">
+              <span class="emoji">😢</span>
+              <span class="emoji-label">অস্থির</span>
+            </button>
+          </div>
+
+          <div class="form-group" style="margin-top: 15px;">
+            <label>অনুভূতির কারণ বা বিষয়</label>
+            <div class="symptom-tags" id="moodTags">
+              <label class="tag-checkbox"><input type="checkbox" value="ঘুম ভালো"> ঘুম ভালো</label>
+              <label class="tag-checkbox"><input type="checkbox" value="ক্লান্তি"> ক্লান্তি</label>
+              <label class="tag-checkbox"><input type="checkbox" value="পারিবারিক চাপ"> পারিবারিক চাপ</label>
+              <label class="tag-checkbox"><input type="checkbox" value="শারীরিক ব্যথা"> শরীরে ব্যথা</label>
+            </div>
+          </div>
+          <button id="saveMoodBtn" class="primary-btn" style="margin-top: 12px;">মন সংরক্ষণ করুন</button>
+        </div>
+
+        <!-- Mood Analysis & Suggestion -->
+        <div class="card suggestion-card" id="moodAnalysisCard">
+          <h3>মনের বিশ্লেষণ ও পরামর্শ</h3>
+          <p id="moodSuggestionText">আপনার মেজাজের বিশ্লেষণ দেখতে লগ করুন।</p>
+        </div>
+      </section>
+
+      <!-- 4. PCOS Risk Check Screen -->
+      <section id="screen-pcos" class="screen">
+        <div class="screen-header">
+          <h2>🩺 পিসিওএস (PCOS) স্ক্রিনিং</h2>
+          <p>সহজ কয়েকটি প্রশ্নের মাধ্যমে আপনার সম্ভাব্য হরমোনজনিত স্বাস্থ্য ঝুঁকি জানুন</p>
+        </div>
+
+        <div class="card quiz-card" id="pcosQuizCard">
+          <form id="pcosForm">
+            <div class="form-group">
+              <label>১. আপনার বয়স (বছর)</label>
+              <input type="number" id="pcosAge" value="23" min="12" max="50" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group half">
+                <label>উচ্চতা (সেমি)</label>
+                <input type="number" id="pcosHeight" value="155" required>
+              </div>
+              <div class="form-group half">
+                <label>ওজন (কেজি)</label>
+                <input type="number" id="pcosWeight" value="55" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>২. আপনার পিরিয়ড কি নিয়মিত হয়?</label>
+              <div class="radio-group">
+                <label><input type="radio" name="cycle_regularity" value="regular" checked> হ্যাঁ, প্রতি মাসে নিয়মিত হয়</label>
+                <label><input type="radio" name="cycle_regularity" value="irregular"> না, প্রায়ই দেরিতে বা অনিয়মিত হয়</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>৩. পিরিয়ডের গড় ব্যবধান (কত দিন পর পর হয়?)</label>
+              <input type="number" id="pcosCycleLength" value="28" min="15" max="90" required>
+            </div>
+            <div class="form-group">
+              <label>৪. সম্প্রতি আপনার কি নিম্নলিখিত সমস্যাগুলো দেখা গেছে?</label>
+              <div class="symptom-tags">
+                <label class="tag-checkbox"><input type="checkbox" id="pcosWeightGain"> হঠাৎ দ্রুত ওজন বৃদ্ধি</label>
+                <label class="tag-checkbox"><input type="checkbox" id="pcosHairGrowth"> চিবুক/মুখে অবাঞ্ছিত লোম</label>
+                <label class="tag-checkbox"><input type="checkbox" id="pcosSkinDark"> ঘাড় বা ত্বকের ভাঁজ কালো হওয়া</label>
+                <label class="tag-checkbox"><input type="checkbox" id="pcosHairLoss"> মাথার চুল অস্বাভাবিক পাতলা হওয়া</label>
+                <label class="tag-checkbox"><input type="checkbox" id="pcosAcne"> অতিরিক্ত ব্রণের সমস্যা</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>৫. আপনি কি প্রতিদিন অন্তত ৩০ মিনিট হাঁটা বা ব্যায়াম করেন?</label>
+              <div class="radio-group">
+                <label><input type="radio" name="pcosExercise" value="yes"> হ্যাঁ, নিয়মিত ব্যায়াম বা হাঁটা করি</label>
+                <label><input type="radio" name="pcosExercise" value="no" checked> না, নিয়মিত করা হয় না</label>
+              </div>
+            </div>
+            <button type="submit" class="primary-btn">ঝুঁকি যাচাই করুন</button>
+          </form>
+        </div>
+
+        <!-- PCOS Result Card -->
+        <div class="card result-card" id="pcosResultCard" style="display: none;">
+          <div class="result-badge" id="pcosRiskBadge">কম ঝুঁকি</div>
+          <p class="result-explanation" id="pcosExplanation"></p>
+          <h4>লক্ষণীয় বিষয়সমূহ:</h4>
+          <ul id="pcosFactorsList" class="factors-list"></ul>
+          <h4>স্বাস্থ্যকর পরামর্শ:</h4>
+          <ul id="pcosAdviceList" class="advice-list"></ul>
+          <div class="disclaimer-box" id="pcosDisclaimer"></div>
+          <button id="pcosRetakeBtn" class="secondary-btn" style="margin-top: 15px;">পুনরায় পরীক্ষা করুন</button>
+        </div>
+      </section>
+
+      <!-- 5. Pregnancy Timeline Screen -->
+      <section id="screen-pregnancy" class="screen">
+        <div class="screen-header">
+          <h2>🤰 গর্ভকালীন যত্ন ও সময়রেখা</h2>
+          <p>সপ্তাহ অনুযায়ী শিশুর বিকাশ ও বিপদচিহ্ন</p>
+        </div>
+
+        <div class="card lmp-card">
+          <h3>গর্ভকাল শুরু করুন</h3>
+          <div class="form-group">
+            <label>শেষ মাসিকের প্রথম দিন (LMP)</label>
+            <input type="date" id="pregLmpDate">
+          </div>
+          <button id="savePregBtn" class="primary-btn">হিসাব দেখুন</button>
+        </div>
+
+        <div class="card preg-status-card" id="pregStatusCard" style="display: none;">
+          <div class="preg-hero-info">
+            <div class="preg-stat">
+              <span class="stat-number" id="pregWeeks">০</span>
+              <span class="stat-label">সপ্তাহ</span>
+            </div>
+            <div class="preg-stat">
+              <span class="stat-number" id="pregTrimester">১ম</span>
+              <span class="stat-label">ত্রৈমাসিক</span>
+            </div>
+            <div class="preg-stat">
+              <span class="stat-number" id="pregEdd">--</span>
+              <span class="stat-label">সম্ভাব্য প্রসবের তারিখ</span>
+            </div>
+          </div>
+
+          <div class="milestone-box" id="pregMilestoneBox">
+            <h4 id="pregBabySize">শিশুর আকার</h4>
+            <p id="pregDevelopment"></p>
+            <p id="pregMotherChanges"></p>
+            <div class="anc-notice" id="pregAncNotice"></div>
+          </div>
+
+          <div class="danger-signs-card">
+            <h4>⚠️ গর্ভকালের ৫টি মারাত্মক বিপদচিহ্ন</h4>
+            <p>এই লক্ষণগুলো দেখা দিলে এক মুহূর্ত দেরি না করে হাসপাতালে যান:</p>
+            <ul id="pregDangerSigns"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Settings Screen -->
+      <section id="screen-settings" class="screen">
+        <div class="screen-header">
+          <h2>⚙️ সেটিংস ও সুরক্ষা</h2>
+          <p>আপনার পরিচয় ও তথ্যের পূর্ণ নিয়ন্ত্রণ আপনার হাতে</p>
+        </div>
+
+        <div class="card settings-card">
+          <div class="setting-item">
+            <label>আপনার গোপন আইডি (Anonymous ID)</label>
+            <div class="id-display-row">
+              <input type="text" id="anonymousUserIdDisplay" readonly value="তৈরি হচ্ছে...">
+              <button id="copyIdBtn" class="copy-btn">কপি</button>
+            </div>
+            <small>এই আইডিতে আপনার কোনো নাম, ফোন বা ইমেইল যুক্ত নেই।</small>
+          </div>
+
+          <div class="setting-item" style="margin-top: 15px;">
+            <label>পিন কোড (PIN Protection)</label>
+            <p><small>অ্যাপ পুনরায় খোলার সময় ৪ ডিজিটের পিন চাইলে সেট করুন।</small></p>
+            <div class="pin-row">
+              <input type="password" id="userPinInput" placeholder="৪-৬ ডিজিটের পিন" maxlength="6">
+              <button id="savePinBtn" class="secondary-btn">পিন সংরক্ষণ</button>
+            </div>
+          </div>
+
+          <div class="setting-item delete-box" style="margin-top: 25px;">
+            <label class="danger-label">সম্পূর্ণ তথ্য মুছে ফেলা (Wipe All Data)</label>
+            <p><small>আপনার সংরক্ষিত সমস্ত মাসিক, মেজাজ এবং স্বাস্থ্য পরীক্ষার তথ্য এই ডিভাইস এবং সার্ভার থেকে চিরতরে মুছে ফেলুন।</small></p>
+            <button id="deleteAllDataBtn" class="danger-btn">🗑️ আমার সব তথ্য চিরতরে মুছুন</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-target="screen-voice">
+        <span class="nav-icon">🎙️</span>
+        <span class="nav-label">কণ্ঠ</span>
+      </button>
+      <button class="nav-item" data-target="screen-period">
+        <span class="nav-icon">🩸</span>
+        <span class="nav-label">মাসিক</span>
+      </button>
+      <button class="nav-item" data-target="screen-mood">
+        <span class="nav-icon">😊</span>
+        <span class="nav-label">মেজাজ</span>
+      </button>
+      <button class="nav-item" data-target="screen-pcos">
+        <span class="nav-icon">🩺</span>
+        <span class="nav-label">পিসিওএস</span>
+      </button>
+      <button class="nav-item" data-target="screen-pregnancy">
+        <span class="nav-icon">🤰</span>
+        <span class="nav-label">গর্ভকাল</span>
+      </button>
+      <button class="nav-item" data-target="screen-settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">সেটিংস</span>
+      </button>
+    </nav>
+
+    <!-- Emergency Modal -->
+    <div id="emergencyModal" class="modal-overlay" style="display: none;">
+      <div class="modal-card emergency-card">
+        <div class="emergency-icon-top">🕊️</div>
+        <h2>আমরা আপনার পাশে আছি</h2>
+        <p class="emergency-main-text">
+          আপনি একা নন। আপনার কষ্ট আমরা বুঝতে পারছি। কোনো চরম সিদ্ধান্ত নেওয়ার আগে অনুগ্রহ করে আমাদের সাথে কথা বলুন।
+        </p>
+        <div class="emergency-actions">
+          <a href="tel:999" class="call-btn-999">
+            <span class="phone-icon">📞</span> ৯৯৯ এ কল করুন (জাতীয় জরুরি সেবা)
+          </a>
+          <a href="tel:109" class="call-btn-109">
+            <span class="phone-icon">📞</span> ১০৯ এ কল করুন (নারী সহায়তা সেল)
+          </a>
+        </div>
+        <div class="calm-box">
+          <p><strong>শান্ত হওয়ার ছোট্ট পরামর্শ:</strong></p>
+          <p>চোখ বন্ধ করে একটি দীর্ঘ গভীর শ্বাস নিন, ধীরে ধীরে ছাড়ুন। আপনি অত্যন্ত মূল্যবান।</p>
+        </div>
+        <button id="dismissEmergencyBtn" class="dismiss-btn">আমি এখন ঠিক আছি</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/pwa/app.js"></script>
+</body>
+</html>
