@@ -53,12 +53,67 @@ async def test_heartbreak_betrayal():
 
 @pytest.mark.asyncio
 async def test_body_shaming():
-    msg = "আমি কালো বলে বারবার বিয়ের সম্বন্ধ ভেঙে যায়, আমার রূপ নেই"
+    msg = "আমি কালো বলে সবাই আমাকে কুৎসিত বলে, আমার কোনো রূপ নেই"
     ctx = analyze_female_emotion(msg)
     assert ctx is not None
     assert ctx["cause_key"] == "BODY_SHAMING"
     resp = await llm_service.generate_response(msg)
     assert "চাঁদ" in resp.reply or "সৌন্দর্য" in resp.reply
+
+@pytest.mark.asyncio
+async def test_daughter_child_discrimination():
+    msg = "মেয়ে হয়েছে বলে শাশুড়ি আমাকে খোঁটা দিচ্ছে আর কথা বলে না"
+    ctx = analyze_female_emotion(msg)
+    assert ctx is not None
+    assert ctx["cause_key"] == "DAUGHTER_CHILD_DISCRIMINATION"
+    resp = await llm_service.generate_response(msg)
+    assert "সুফিয়া" in resp.reply
+    assert "ক্রোমোজোম" in resp.reply
+
+@pytest.mark.asyncio
+async def test_financial_dependency_crushed_dreams():
+    msg = "বিয়ের পর আমার পড়াশোনা বন্ধ করে দিয়েছে আমার স্বপ্ন সব শেষ"
+    ctx = analyze_female_emotion(msg)
+    assert ctx is not None
+    assert ctx["cause_key"] == "FINANCIAL_DEPENDENCY_CRUSHED_DREAMS"
+    resp = await llm_service.generate_response(msg)
+    assert "রুমানা" in resp.reply
+
+@pytest.mark.asyncio
+async def test_domestic_abuse_neglect():
+    msg = "আমার স্বামী আমার গায়ে হাত তোলে আর গালি দেয়"
+    ctx = analyze_female_emotion(msg)
+    assert ctx is not None
+    assert ctx["cause_key"] == "DOMESTIC_ABUSE_NEGLECT"
+    resp = await llm_service.generate_response(msg)
+    assert "১০৯" in resp.reply or "নির্যাতন" in resp.reply
+
+@pytest.mark.asyncio
+async def test_arranged_marriage_trauma():
+    msg = "পাত্রপক্ষ বারবার এসে আমাকে গায়ের রঙের জন্য ফিরিয়ে দেয়"
+    ctx = analyze_female_emotion(msg)
+    assert ctx is not None
+    assert ctx["cause_key"] == "ARRANGED_MARRIAGE_TRAUMA"
+    resp = await llm_service.generate_response(msg)
+    assert "শাম্মী" in resp.reply
+
+@pytest.mark.asyncio
+async def test_menopause_depression():
+    msg = "বয়স ৪৫ পার হয়েছে মাসিক বন্ধ হয়ে মেজাজ খুব খারাপ থাকে হট ফ্ল্যাশ হয়"
+    ctx = analyze_female_emotion(msg)
+    assert ctx is not None
+    assert ctx["cause_key"] == "MENOPAUSE_DEPRESSION"
+    resp = await llm_service.generate_response(msg)
+    assert "মেনোপজ" in resp.reply
+
+@pytest.mark.asyncio
+async def test_guilt_burnout():
+    msg = "সবার কাজ করতে করতে আমি শেষ নিজের জন্য কোনো সময় নেই"
+    ctx = analyze_female_emotion(msg)
+    assert ctx is not None
+    assert ctx["cause_key"] == "GUILT_BURNOUT"
+    resp = await llm_service.generate_response(msg)
+    assert "প্রদীপ" in resp.reply or "ক্লান্তি" in resp.reply
 
 @pytest.mark.asyncio
 async def test_direct_emergency_call_payload():

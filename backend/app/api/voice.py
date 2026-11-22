@@ -28,7 +28,7 @@ async def process_voice_message(
     if "application/json" in content_type:
         try:
             body = await request.json()
-            transcript = body.get("direct_transcript") or body.get("message") or ""
+            transcript = body.get("direct_transcript") or body.get("message") or body.get("text") or body.get("query") or ""
             transcript = transcript.strip()
         except Exception:
             pass
