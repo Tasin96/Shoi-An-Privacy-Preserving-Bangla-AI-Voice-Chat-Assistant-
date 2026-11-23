@@ -3,8 +3,17 @@ import tempfile
 import os
 import re
 import time
+import hashlib
+from collections import OrderedDict
 from typing import Optional
 from app.config import settings
+
+# In-memory LRU audio cache for zero-latency instant playback of frequent phrases
+_AUDIO_CACHE: OrderedDict[str, str] = OrderedDict()
+_MAX_CACHE_SIZE = 128
+
+def _get_cache_key(text: str) -> str:
+    return hashlib.md5(text.encode("utf-8")).hexdigest()
 
 def normalize_bangla_speech_text(text: str) -> str:
     """
@@ -137,6 +146,13 @@ async def text_to_speech_base64(text: str) -> Optional[str]:
     if not clean_text:
         return None
 
+    # Check in-memory audio cache for zero-latency response
+    cache_key = _get_cache_key(clean_text)
+    if cache_key in _AUDIO_CACHE:
+        _AUDIO_CACHE.move_to_end(cache_key)
+        print(f"[TTS] Cache HIT in 0.001s (zero content logged)")
+        return _AUDIO_CACHE[cache_key]
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
         temp_path = temp_file.name
 
@@ -164,6 +180,12 @@ async def text_to_speech_base64(text: str) -> Optional[str]:
                 encoded = base64.b64encode(f.read()).decode("utf-8")
                 elapsed = time.time() - start_time
                 print(f"[TTS] Synthesized audio in {elapsed:.2f}s (zero content logged)")
+                
+                # Cache audio response in LRU memory
+                _AUDIO_CACHE[cache_key] = encoded
+                if len(_AUDIO_CACHE) > _MAX_CACHE_SIZE:
+                    _AUDIO_CACHE.popitem(last=False)
+
                 return encoded
     finally:
         if os.path.exists(temp_path):

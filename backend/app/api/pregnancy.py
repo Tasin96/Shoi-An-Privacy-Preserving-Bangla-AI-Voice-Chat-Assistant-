@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -52,7 +53,7 @@ def start_pregnancy_tracker(
 
     return get_pregnancy_status(req.lmp_date)
 
-@router.get("/timeline", response_model=PregnancyStatusResponse)
+@router.get("/timeline", response_model=Optional[PregnancyStatusResponse])
 def get_timeline(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -63,10 +64,7 @@ def get_timeline(
     ).first()
 
     if not active_preg:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="কোনো সক্রিয় গর্ভকালীন তথ্য পাওয়া যায়নি। অনুগ্রহ করে শেষ পিরিয়ডের প্রথম দিন (LMP) লিখুন।"
-        )
+        return None
 
     return get_pregnancy_status(active_preg.lmp_date)
 
