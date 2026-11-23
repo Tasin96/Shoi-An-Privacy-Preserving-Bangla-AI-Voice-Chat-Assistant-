@@ -17,6 +17,11 @@ from app.api.pcos import router as pcos_router
 from app.api.safety import router as safety_router
 from app.api.chat import router as chat_router
 from app.api.voice import router as voice_router
+from app.api.pcos_tracker import router as pcos_tracker_router
+from app.api.consultation import router as consultation_router
+from app.api.ml_admin import router as ml_admin_router
+from app.api.health_profile import router as health_profile_router
+from app.api.medical_reports import router as medical_reports_router
 
 # Configure privacy-preserving logging
 root_logger = logging.getLogger()
@@ -51,6 +56,11 @@ app.include_router(pcos_router)
 app.include_router(safety_router)
 app.include_router(chat_router)
 app.include_router(voice_router)
+app.include_router(pcos_tracker_router)
+app.include_router(consultation_router)
+app.include_router(ml_admin_router)
+app.include_router(health_profile_router)
+app.include_router(medical_reports_router)
 
 @app.get("/health")
 def health_check():

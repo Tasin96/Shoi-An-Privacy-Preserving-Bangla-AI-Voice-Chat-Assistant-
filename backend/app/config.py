@@ -11,8 +11,11 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_DAYS: int = 90
 
-    # Database
-    DATABASE_URL: str = "sqlite:///./shoi.db"
+    # Database - Absolute path to root shoi.db to avoid cwd discrepancies
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        f"sqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'shoi.db'))}"
+    )
 
     # LLM Settings
     LLM_PROVIDER: str = "gemini"  # gemini, openai, or mock

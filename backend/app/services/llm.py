@@ -1,4 +1,5 @@
 import os
+import re
 import httpx
 from typing import List, Dict, Any, Optional
 from app.config import settings
@@ -146,14 +147,23 @@ class LLMService:
             emergency_payload=safety_result.emergency_payload
         )
 
+    def _is_english(self, text: str) -> bool:
+        eng_chars = len(re.findall(r'[a-zA-Z]', text))
+        bn_chars = len(re.findall(r'[\u0980-\u09ff]', text))
+        return eng_chars > 3 and eng_chars > bn_chars
+
     async def _call_gemini(self, message: str, context: str, history: Optional[List[ChatMessage]]) -> Optional[str]:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
         
         prompt = (
             f"{self.system_prompt}\n\n"
-            f"=== স্বাস্থ্য তথ্য ও নির্দেশনা (Context) ===\n{context or 'কোনো ক্লিনিক্যাল কনটেক্সট নেই, সাধারণ বন্ধুত্বপূর্ণ আলাপ হিসেবে উত্তর দিন।'}\n\n"
-            f"ব্যবহারকারীর প্রশ্ন: {message}\n"
-            f"নির্দেশনা: একজন কাছের বিশ্বস্ত বন্ধু বা সই হিসেবে সহজ, সাবলীল, উষ্ণ বাংলায় উত্তর দিন।"
+            f"=== Medical Health Context (WHO/DGHS) ===\n{context or 'No clinical context, friendly guidance.'}\n\n"
+            f"User Query: {message}\n"
+            f"Instructions:\n"
+            f"1. You are Shoi, a compassionate, evidence-based women's reproductive health guide.\n"
+            f"2. NEVER pretend to be a human doctor or prescribe medications. Suggest consulting a verified gynecologist.\n"
+            f"3. Language: Match user language (English if asked in English, Bangla if asked in Bangla).\n"
+            f"4. Explain medical terminology simply and identify red flags immediately."
         )
         
         payload = {
@@ -172,9 +182,12 @@ class LLMService:
         url = f"{settings.OPENAI_BASE_URL}/chat/completions"
         headers = {"Authorization": f"Bearer {settings.OPENAI_API_KEY}"}
         
-        messages = [
-            {"role": "system", "content": f"{self.system_prompt}\n\n=== Context ===\n{context or 'General friendly conversation.'}"}
-        ]
+        sys_msg = (
+            f"{self.system_prompt}\n\n"
+            f"=== Context ===\n{context or 'General friendly conversation.'}\n\n"
+            f"Respond in the user's language (Bangla or English). Never pretend to be a human doctor."
+        )
+        messages = [{"role": "system", "content": sys_msg}]
         if history:
             for h in history[-3:]:
                 messages.append({"role": h.role, "content": h.content})
@@ -196,9 +209,20 @@ class LLMService:
 
     def _build_grounded_fallback_reply(self, message: str, chunks: List[Dict[str, Any]]) -> str:
         """
-        Creates an empathetic, medically precise Bangla response using matched knowledge base chunks.
+        Creates an empathetic, medically precise bilingual response using matched knowledge base chunks.
         """
         top_chunk = chunks[0]
+        if self._is_english(message):
+            greeting = "Hello, "
+            body = (
+                f"Regarding '{top_chunk['title']}':\n"
+                f"{top_chunk['text']}\n\n"
+                f"Please note: This evidence-based information is for educational screening. "
+                f"A certified gynecologist should evaluate your individual clinical profile."
+            )
+            closing = f"\n\n(Source: {top_chunk['source']})"
+            return f"{greeting}{body}{closing}"
+
         greeting = "আপু, "
         body = top_chunk["text"]
         closing = f"\n\n(সূত্র: {top_chunk['source']})"

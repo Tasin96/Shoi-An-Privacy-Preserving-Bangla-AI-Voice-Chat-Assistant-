@@ -15,6 +15,7 @@ class User(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     pin_hash = Column(String(128), nullable=True)
+    role = Column(String(20), default="patient", index=True)  # patient, doctor, researcher, admin
     age_group = Column(String(20), nullable=True)
     language = Column(String(10), default="bn")
 
@@ -25,3 +26,10 @@ class User(Base):
     pcos_checks = relationship("PCOSCheck", back_populates="user", cascade="all, delete-orphan")
     pregnancy_logs = relationship("PregnancyLog", back_populates="user", cascade="all, delete-orphan")
     reminders = relationship("Reminder", back_populates="user", cascade="all, delete-orphan")
+    patient_profile = relationship("PatientProfile", uselist=False, back_populates="user", cascade="all, delete-orphan")
+    consent_records = relationship("ConsentRecord", back_populates="user", cascade="all, delete-orphan")
+    symptom_logs = relationship("SymptomLog", back_populates="user", cascade="all, delete-orphan")
+    lifestyle_logs = relationship("LifestyleLog", back_populates="user", cascade="all, delete-orphan")
+    medical_reports = relationship("MedicalReport", back_populates="user", cascade="all, delete-orphan")
+    consultations = relationship("Consultation", back_populates="patient", cascade="all, delete-orphan")
+    health_assessments = relationship("HealthAssessment", back_populates="user", cascade="all, delete-orphan")
