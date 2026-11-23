@@ -55,8 +55,9 @@ def test_anonymous_auth_and_period_logging():
 def test_dom_id_consistency():
     import re
     from pathlib import Path
-    html_text = Path("pwa/index.html").read_text(encoding="utf-8")
-    js_text = Path("pwa/app.js").read_text(encoding="utf-8")
+    pwa_dir = Path("pwa") if Path("pwa").exists() else Path("../pwa")
+    html_text = (pwa_dir / "index.html").read_text(encoding="utf-8")
+    js_text = (pwa_dir / "app.js").read_text(encoding="utf-8")
     js_ids = set(re.findall(r"document\.getElementById\(['\"]([^'\"]+)['\"]\)", js_text))
     html_ids = set(re.findall(r"id=['\"]([^'\"]+)['\"]", html_text))
     # shoiToast is dynamically created if not present

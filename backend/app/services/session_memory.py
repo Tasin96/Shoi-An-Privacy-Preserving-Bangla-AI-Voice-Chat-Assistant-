@@ -4,7 +4,9 @@ from typing import List, Dict, Optional, Any
 from app.schemas.chat import ChatMessage
 
 TOPIC_KEYWORDS = {
-    "menstrual_pain": ["মাসিক", "পিরিয়ড", "তলপেট", "কামড়ায়", "চাবায়", "ডিসমেনোরিয়া", "ব্লিডিং", "প্যাড"],
+    "abdominal_pain": ["পেট ব্যথা", "পেটে ব্যথা", "তলপেট ব্যথা", "তলপেটে ব্যথা", "কামড়ায়", "চাবায়", "মোচড়", "পেট খারাপ", "পেট কামড়ানো", "পেট চাবানো"],
+    "menstrual_pain": ["মাসিক ব্যথা", "মাসিকের ব্যথা", "পিরিয়ড ব্যথা", "পিরিয়ডের ব্যথা", "ডিসমেনোরিয়া"],
+    "menstrual_basics": ["মাসিক", "পিরিয়ড", "প্যাড", "রক্তস্রাব"],
     "pcos": ["পিসিওএস", "pcos", "লোম", "ব্রণ", "ওজন", "ডিম্বাশয়", "অনিয়মিত", "পিসিওডি", "pcod", "ডিম্বাণু", "ওভুলেশন", "সিস্ট"],
     "pregnancy": ["গর্ভ", "গর্ভবতী", "প্রেগন্যান্ট", "বাচ্চা", "ডেলিভারি", "প্রসব", "বমি", "নড়াচড়া", "ইডিডি"],
     "emotional_distress": ["ডিপ্রেশন", "মন খারাপ", "কান্না", "কষ্ট", "হতাশা", "অপমান", "খোঁটা", "শান্তি নেই", "একা একা", "একাকীত্ব"],
@@ -34,6 +36,24 @@ class SessionMemory:
 
     def _detect_topic(self, text: str) -> Optional[str]:
         text_lower = text.lower()
+        
+        # Explicit period / menstrual tokens
+        has_period = any(m in text_lower for m in ["মাসিক", "পিরিয়ড", "ডিসমেনোরিয়া", "ব্লিডিং", "প্যাড", "রক্তস্রাব"])
+        
+        # Abdominal pain & belly symptoms (flexible token & stem matching)
+        has_belly = any(b in text_lower for b in ["পেট", "তলপেট"])
+        has_belly_symptom = any(s in text_lower for s in ["ব্যথা", "কামড়া", "চাবা", "মোচড়", "খারাপ", "ফাঁপা", "ভারী", "অস্বস্তি", "জ্বালা"])
+        has_abdominal = (has_belly and has_belly_symptom) or any(k in text_lower for k in ["কামড়ায়", "চাবায়", "পেট খারাপ", "পেট কামড়ানো", "পেট চাবানো"])
+        
+        # Never jump to period when abdominal pain is mentioned without explicit menstrual words
+        if has_abdominal and not has_period:
+            return "abdominal_pain"
+        
+        if has_period:
+            if any(p in text_lower for p in ["ব্যথা", "তলপেট", "কামড়া", "চাবা", "ডিসমেনোরিয়া"]):
+                return "menstrual_pain"
+            return "menstrual_basics"
+
         for topic, keywords in TOPIC_KEYWORDS.items():
             for kw in keywords:
                 if kw in text_lower:

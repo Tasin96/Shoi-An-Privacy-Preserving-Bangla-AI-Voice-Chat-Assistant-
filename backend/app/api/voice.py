@@ -16,7 +16,19 @@ def generate_voice_suggestions(topic: Optional[str], text: str) -> list[str]:
             "🩸 পিরিয়ডের ব্যথা কমানোর উপায়",
             "🤰 গর্ভকালীন যত্ন কেমন হবে?"
         ]
-    if topic == "menstrual_pain":
+    if topic == "abdominal_pain":
+        return [
+            "বাইরের অস্বাস্থ্যকর খাবার খেয়েছেন কি?",
+            "গ্যাস বা এসিডিটির সমস্যা আছে কি?",
+            "ব্যথাটা পেটের ঠিক কোন অংশে হচ্ছে?"
+        ]
+    elif topic == "menstrual_basics":
+        return [
+            "স্বাভাবিক মাসিক চক্র কতদিনের?",
+            "মাসিকে কেমন যত্ন নেওয়া উচিত?",
+            "প্যাড ব্যবহারের সঠিক নিয়ম"
+        ]
+    elif topic == "menstrual_pain":
         return [
             "গরম পানির সেঁক কীভাবে নেব?",
             "মাসিকে কী কী খাবার খাওয়া ভালো?",
