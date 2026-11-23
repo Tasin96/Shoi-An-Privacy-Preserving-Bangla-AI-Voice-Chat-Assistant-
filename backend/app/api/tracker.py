@@ -54,7 +54,7 @@ def log_period(
         start_date=log.start_date,
         end_date=log.end_date,
         flow=log.flow,
-        symptoms=json.loads(log.symptoms),
+        symptoms=json.loads(log.symptoms or "[]"),
         notes=log.notes,
         created_at=log.created_at
     )
@@ -118,7 +118,7 @@ def log_mood(
         user_id=log.user_id,
         date=log.date,
         mood_score=log.mood_score,
-        tags=json.loads(log.tags),
+        tags=json.loads(log.tags or "[]"),
         note=log.note,
         created_at=log.created_at
     )

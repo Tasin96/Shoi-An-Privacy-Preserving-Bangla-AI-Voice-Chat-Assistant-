@@ -3,6 +3,18 @@ from typing import List, Optional, Tuple
 import statistics
 from app.schemas.tracker import CycleAnalysisResponse
 
+BN_MONTHS = {
+    1: "জানুয়ারি", 2: "ফেব্রুয়ারি", 3: "মার্চ", 4: "এপ্রিল",
+    5: "মে", 6: "জুন", 7: "জুলাই", 8: "আগস্ট",
+    9: "সেপ্টেম্বর", 10: "অক্টোবর", 11: "নভেম্বর", 12: "ডিসেম্বর"
+}
+
+def format_bn_date(d: date, include_year: bool = True) -> str:
+    m = BN_MONTHS.get(d.month, str(d.month))
+    if include_year:
+        return f"{d.day} {m}, {d.year}"
+    return f"{d.day} {m}"
+
 def analyze_cycles(
     periods: List[Tuple[date, Optional[date]]],
     as_of: Optional[date] = None
@@ -89,8 +101,8 @@ def analyze_cycles(
 
     explanation_parts = [
         f"আপনার গড় পিরিয়ড চক্র {round(avg_length)} দিনের।",
-        f"পরবর্তী সম্ভাব্য পিরিয়ড শুরু হতে পারে {next_start.strftime('%d %B, %Y')} এর আশেপাশে।",
-        f"সম্ভাব্য ওভুলেশন (ডিম্বস্ফোটন) এর সময় {ovul_start.strftime('%d %B')} থেকে {ovul_end.strftime('%d %B')}।"
+        f"পরবর্তী সম্ভাব্য পিরিয়ড শুরু হতে পারে {format_bn_date(next_start)} এর আশেপাশে।",
+        f"সম্ভাব্য ওভুলেশন (ডিম্বস্ফোটন) এর সময় {format_bn_date(ovul_start, False)} থেকে {format_bn_date(ovul_end, False)}।"
     ]
     if warning_notes:
         explanation_parts.append(" " + " ".join(warning_notes))
