@@ -173,3 +173,32 @@ def test_colloquial_dialect_normalization():
     raw2 = "গা মেজমেজ করে আর জর জর লাগে"
     norm2 = normalize_bangla_text(raw2)
     assert "দুর্বলতা" in norm2 or "জ্বর" in norm2
+
+@pytest.mark.asyncio
+async def test_regional_dialects_and_banglish_voice_chat():
+    # Regional Dialects
+    r1 = await llm_service.generate_response("কী করতাছো?")
+    assert "ফ্রি" in r1.reply or "বলো" in r1.reply or "দিন" in r1.reply
+
+    r2 = await llm_service.generate_response("কেমুন আছো?")
+    assert "ভালো" in r2.reply or "আছি" in r2.reply
+
+    r3 = await llm_service.generate_response("মনডা ভালো না")
+    assert "খারাপ" in r3.reply or "বিশ্রাম" in r3.reply or "মন" in r3.reply
+
+    r4 = await llm_service.generate_response("ভালা আছো নি?")
+    assert "ভালো" in r4.reply or "আছি" in r4.reply
+
+    # Banglish Talk
+    r5 = await llm_service.generate_response("kemon acho")
+    assert "ভালো" in r5.reply or "আছি" in r5.reply
+
+    r6 = await llm_service.generate_response("bored lagche")
+    assert "খারাপ" in r6.reply or "বোরিং" in r6.reply or "মন" in r6.reply
+
+    # Personal curiosity & everyday wellness
+    r7 = await llm_service.generate_response("তোমার প্রিয় ফুল কি?")
+    assert "ফুল" in r7.reply or "বেলি" in r7.reply
+
+    r8 = await llm_service.generate_response("সর্দি লেগেছে নাক বন্ধ")
+    assert "গরম" in r8.reply or "চা" in r8.reply or "লবণ" in r8.reply

@@ -85,7 +85,7 @@ uv pip install -r backend/requirements.txt
 ```powershell
 & backend\.venv\Scripts\python.exe -m pytest backend/tests
 ```
-*ফলাফল: ৫৪টি টেস্টই সফলভাবে উত্তীর্ণ (54 passed, 100% pass rate in ~14s).*
+*ফলাফল: ৫৫টি টেস্টই সফলভাবে উত্তীর্ণ (55 passed, 100% pass rate in ~12s).*
 
 ---
 
