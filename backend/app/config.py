@@ -2,8 +2,14 @@ import os
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+_backend_env = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="allow")
+    model_config = SettingsConfigDict(
+        env_file=(_backend_env, _root_env, ".env"),
+        extra="allow"
+    )
 
     APP_NAME: str = "Shoi (সই) - Health Assistant"
     DEBUG: bool = True
