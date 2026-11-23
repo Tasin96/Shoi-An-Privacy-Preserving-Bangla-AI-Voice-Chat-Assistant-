@@ -258,3 +258,152 @@ def test_unauthorized_access():
 
     resp3 = client.get("/api/v1/patient/memories")
     assert resp3.status_code == 401
+
+# ----------------------------------------------------
+# 8. CONVERSATION SUMMARY GENERATION (LAYER 3)
+# ----------------------------------------------------
+def test_summary_generation_layer_3():
+    user_id, headers = create_authenticated_user()
+    db = SessionLocal()
+    try:
+        from app.ai.memory_manager import memory_manager
+        conv_resp = client.post("/api/v1/conversations", json={"title": "Summary Test"}, headers=headers)
+        conv_id = conv_resp.json()["id"]
+
+        for i in range(4):
+            client.post("/api/v1/chat/message", json={
+                "conversation_id": conv_id,
+                "message": f"Turn {i+1}: I am checking my health status."
+            }, headers=headers)
+
+        summary = memory_manager.update_summary_if_needed(db, session_id=conv_id, user_id=user_id, force=True)
+        assert summary is not None
+        assert summary.session_id == conv_id
+        assert summary.user_id == user_id
+        assert len(summary.summary_text) > 0
+    finally:
+        db.close()
+
+# ----------------------------------------------------
+# 9. CONTRADICTORY PATIENT INFORMATION HANDLING
+# ----------------------------------------------------
+def test_contradictory_patient_information():
+    user_id, headers = create_authenticated_user()
+
+    # User initially reports 28 days cycle
+    client.post("/api/v1/chat/message", json={
+        "message": "My cycle has always been regular, exactly 28 days."
+    }, headers=headers)
+
+    mems1 = client.get("/api/v1/patient/memories", headers=headers).json()
+    cycle_mem1 = next((m for m in mems1 if m["key"] == "cycle_length"), None)
+    assert cycle_mem1 is not None
+    assert "28" in cycle_mem1["value"]
+
+    # User updates with contradictory information (delayed to 50 days)
+    client.post("/api/v1/chat/message", json={
+        "message": "Actually, my cycle length changed and now it takes 50 days."
+    }, headers=headers)
+
+    mems2 = client.get("/api/v1/patient/memories", headers=headers).json()
+    cycle_mem2 = next((m for m in mems2 if m["key"] == "cycle_length"), None)
+    assert cycle_mem2 is not None
+    assert "50" in cycle_mem2["value"]
+
+# ----------------------------------------------------
+# 10. MISSING PATIENT INFORMATION / HOLISTIC TRIAGE
+# ----------------------------------------------------
+def test_missing_patient_information_triage():
+    user_id, headers = create_authenticated_user()
+
+    resp = client.post("/api/v1/chat/message", json={
+        "message": "আমার পেটে ব্যথা করছে"
+    }, headers=headers)
+    assert resp.status_code == 200
+    reply = resp.json()["response"]
+    assert len(reply) > 0
+    assert any(term in reply for term in ["খাবার", "গ্যাস্ট্রিক", "মাসিক", "ব্যথা", "কখন", "কোথায়", "লক্ষণ", "আপু"])
+
+# ----------------------------------------------------
+# 11. CONTEXT WINDOW OVERFLOW & COMPACTION
+# ----------------------------------------------------
+def test_context_window_overflow_and_compaction():
+    user_id, headers = create_authenticated_user()
+
+    conv_resp = client.post("/api/v1/conversations", json={"title": "Long Session"}, headers=headers)
+    conv_id = conv_resp.json()["id"]
+
+    for turn in range(8):
+        msg_resp = client.post("/api/v1/chat/message", json={
+            "conversation_id": conv_id,
+            "message": f"Turn {turn+1}: Can you track my cycle notes?"
+        }, headers=headers)
+        assert msg_resp.status_code == 200
+
+    history = client.get(f"/api/v1/conversations/{conv_id}/messages", headers=headers).json()
+    assert len(history) == 16  # 8 user + 8 assistant
+
+    db = SessionLocal()
+    try:
+        from app.ai.context_builder import context_builder
+        pkg = context_builder.build_context(db, user_id=user_id, session_id=conv_id, current_message="Final check", history_limit=10)
+        assert len(pkg.recent_messages) <= 10
+        assert pkg.context_used["recent_history"] is True
+    finally:
+        db.close()
+
+# ----------------------------------------------------
+# 12. CASCADE DELETION & ACCOUNT DATA WIPE
+# ----------------------------------------------------
+def test_cascade_deletion_and_account_data_wipe():
+    user_id, headers = create_authenticated_user()
+
+    conv_resp = client.post("/api/v1/conversations", json={"title": "Session to Delete"}, headers=headers)
+    conv_id = conv_resp.json()["id"]
+    client.post("/api/v1/chat/message", json={
+        "conversation_id": conv_id,
+        "message": "My cycle is 35 days."
+    }, headers=headers)
+
+    # Delete conversation session
+    del_conv = client.delete(f"/api/v1/conversations/{conv_id}", headers=headers)
+    assert del_conv.status_code == 200
+    assert del_conv.json()["status"] == "success"
+
+    # Messages under that session must now be gone
+    chk_conv = client.get(f"/api/v1/conversations/{conv_id}", headers=headers)
+    assert chk_conv.status_code == 404
+
+    # Test Memory Consent Global Toggle
+    consent_off = client.post("/api/v1/patient/memory-consent", json={"consent_enabled": False}, headers=headers)
+    assert consent_off.status_code == 200
+    assert consent_off.json()["consent_enabled"] is False
+
+    active_mems = client.get("/api/v1/patient/memories", headers=headers).json()
+    assert len(active_mems) == 0
+
+    # Test Full Account Data Wipe
+    wipe_resp = client.delete("/api/v1/patient/account-data", headers=headers)
+    assert wipe_resp.status_code == 200
+    assert wipe_resp.json()["status"] == "success"
+
+# ----------------------------------------------------
+# 13. LLM PROVIDER FAILURE GRACEFUL FALLBACK
+# ----------------------------------------------------
+@pytest.mark.asyncio
+async def test_llm_provider_failure_graceful_fallback():
+    from app.ai.llm_provider import UnifiedLLMProvider, OllamaProvider
+
+    unified = UnifiedLLMProvider()
+    unreachable_ollama = OllamaProvider(base_url="http://127.0.0.1:59999", timeout=1.0)
+    unified.primary_provider_type = "ollama"
+    unified.get_provider = lambda: unreachable_ollama
+
+    resp = await unified.generate_with_fallback(
+        prompt="আমার মাসিক অনিয়মিত, করণীয় কী?",
+        system_prompt="Shoi assistant",
+        history=[]
+    )
+    assert resp is not None
+    assert len(resp.text) > 0
+    assert resp.provider_name == "mock"

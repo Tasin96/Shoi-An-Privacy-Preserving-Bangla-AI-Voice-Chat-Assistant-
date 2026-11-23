@@ -51,6 +51,9 @@ class PatientMemoryUpdateRequest(BaseModel):
     verified_status: Optional[bool] = None
     consent_status: Optional[bool] = None
 
+class MemoryConsentRequest(BaseModel):
+    consent_enabled: bool
+
 class PatientHealthHistoryResponse(BaseModel):
     profile: Optional[Dict[str, Any]] = None
     memories: List[PatientMemoryResponse] = Field(default_factory=list)

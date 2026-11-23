@@ -1,45 +1,41 @@
 # Shoi (সই) — গ্রামীণ নারীদের জন্য কৃত্রিম বুদ্ধিমত্তাভিত্তিক ভয়েস স্বাস্থ্য সহকারী
 
-> **Privacy-preserving Bangla AI voice chat assistant for menstrual health and mental wellness among rural and semi-urban women.**
+> **Privacy-preserving Bangla AI Voice & Chat Assistant for Women's Healthcare, PCOS Risk Monitoring, and Context-Aware Gynecological Guidance.**
 
 ---
 
 ## 🌸 মূল বৈশিষ্ট্যসমূহ (Core Features)
 
-1. **ভয়েস-ফার্স্ট ও সহজ বাংলা (Voice-First & Real-Time Bangla Interaction):**
-   - **১৫-টার্ন লং-হরাইজন কন্টেক্সট মেমোরি:** সই পূর্ববর্তী আলোচনা ও উপসর্গের ধারাবাহিকতা মনে রেখে প্রাসঙ্গিক প্রশ্ন ও ফলো-আপ করে (ইন-মেমোরি LRU বাফার, ২৪ ঘণ্টা মেয়াদ, ডিস্কে কোনো PII সংরক্ষিত হয় না)।
-   - **আল্ট্রা-ফাস্ট অডিও ক্যাশিং (<০.০০১ সেকেন্ড):** ইন-মেমোরি LRU অডিও ক্যাশের কারণে ঘন ঘন ব্যবহৃত সম্বোধন ও বাক্যের অডিও মুহূর্তের মধ্যে প্লে হয়।
+1. **বুদ্ধিমান কন্টেক্সট-সচেতন এআই গাইনিকোলজিস্ট (Context-Aware AI Gynecologist):**
+   - **৩-স্তরের মেমোরি সিস্টেম (Three-Layer Memory System):**
+     - **লেয়ার ১ (স্বল্পমেয়াদী মেমোরি):** বর্তমান ও সাম্প্রতিক কথোপকথনের মেসেজ হিস্ট্রি সেশন-আইডি অনুযায়ী ডাটাবেসে স্থায়ীভাবে সংরক্ষিত থাকে।
+     - **লেয়ার ২ (দীর্ঘমেয়াদী রোগী মেমোরি):** রোগীর সম্মতি সাপেক্ষে মাসিকের চক্রের দৈর্ঘ্য (যেমন: ৪০-৫৫ দিন), ব্যথার তীব্রতা, ব্রণের সমস্যা, ঘুমের সময় ইত্যাদি স্বয়ংক্রিয়ভাবে ক্লিনিক্যাল কি-ভ্যালু আকারে সংরক্ষিত থাকে। রোগী যেকোনো সময় সংরক্ষিত তথ্য দেখতে, সংশোধন করতে বা মুছে ফেলতে পারেন।
+     - **লেয়ার ৩ (কথোপকথন সারসংক্ষেপ):** দীর্ঘ কথোপকথনের সময় পূর্ববর্তী আলোচনা ও অমীমাংসিত প্রশ্নাবলি কম্প্যাক্ট সামারি হিসেবে সংরক্ষিত থাকে, যাতে কনটেক্সট উইন্ডো কখনো হারিয়ে না যায়।
+   - **১০০টি বাস্তব জীবনের নারীর স্বাস্থ্য প্রশ্নোত্তর (100 Real-Life Women's Health Q&As):** ৭টি প্রধান ক্যাটাগরিতে (মাসিক, সাদা স্রাব, স্তন, পরিচ্ছন্নতা, হরমোন/PCOS, প্রস্রাব ও লাইফস্টাইল) সম্পূর্ণ ক্লিনিক্যালি নির্ভরযোগ্য প্রশ্ন-উত্তর নলেজবেসে RAG দ্বারা সংযুক্ত।
+   - **সরাসরি ও স্পষ্ট উত্তর (Direct Answer Without Echoing):** উত্তরে ব্যবহারকারীর প্রশ্ন পুনরায় আওড়ানো হয় না; সরাসরি সহানুভূতিশীল "আপু..." সম্বোধনে তথ্যবহুল চিকিৎসাগত পরামর্শ প্রদান করা হয়।
+   - **পূর্ণাঙ্গ ভয়েস পাঠ (Full-Length Voice Readout):** দীর্ঘ ও বিস্তারিত উত্তর কোনো অক্ষর কাটা বা সংক্ষিপ্তকরণ ছাড়াই সম্পূর্ণভাবে পড়ে শোনানো হয়। ব্রাউজারের ১৫-সেকেন্ড টাইমআউট এড়াতে বাক্যভিত্তিক সিকোয়েন্সিয়াল অডিও কিউয়িং ব্যবহৃত হয়।
+   - **১-ট্যাপ 'শুনুন' বোতাম (One-Tap Audio Playback):** চ্যাট বাবলগুলোর পাশেই '🔊 শুনুন' বোতাম দিয়ে যেকোনো উত্তরের ভয়েস সরাসরি শোনা যায়।
+
+2. **ভয়েস-ফার্স্ট ও সহজ বাংলা (Voice-First & Real-Time Bangla Interaction):**
+   - **আঞ্চলিক ভাষার উপসর্গ নরমালাইজেশন:** "পেট কামড়ায়", "গা ম্যাজম্যাজ", "তলপেট চাবায়", "সাদা পানি" ইত্যাদি গ্রামীণ কথ্য অভিব্যক্তি স্বয়ংক্রিয়ভাবে স্ট্যান্ডার্ড চিকিৎসাগত টার্মে রূপান্তর।
    - **কথোপকথন ইন্টারাপ্ট (Barge-in):** উত্তর চলাকালীন স্ক্রিনে ট্যাপ করলেই তাৎক্ষণিক কণ্ঠ থামিয়ে নতুন কথা শোনার মোডে চলে যায়।
    - **শব্দ ইকুয়ালাইজার ও গতি নিয়ন্ত্রণ:** কথা বলার সময় লাইভ ৪-বার অ্যানিমেটেড ইকুয়ালাইজার এবং ধীরগতির জন্য অডিও স্পিড কন্ট্রোল (১.০x ও ০.৮৫x)।
-   - **৪৩+ দৈনন্দিন জীবনের কথ্য ইনটেন্ট ও অ্যাক্টিভ লিসেনিং:** সাধারণ কথোপকথন (হুম, আচ্ছা, তারপর, কী করছো, আজ আমার জন্মদিন, রান্না, গৃহস্থালির খাটুনি ও শরীর ব্যথা, পেটে গ্যাস/অ্যাসিডিটি, ফিটনেস ও রূপচর্চা, চোখের ক্লান্তি, একাকীত্ব ও আত্মবিশ্বাস) এর মতো যেকোনো স্বাভাবিক কথ্য বাক্যে মানবিক ও সহানুভূতিশীল সঙ্গীর মতো নিখুঁত উত্তর প্রদান।
-   - **আঞ্চলিক ভাষার উপসর্গ নরমালাইজেশন:** "পেট কামড়ায়", "গা ম্যাজম্যাজ", "তলপেট চাবায়", "সাদা পানি" ইত্যাদি গ্রামীণ কথ্য অভিব্যক্তি স্বয়ংক্রিয়ভাবে স্ট্যান্ডার্ড চিকিৎসাগত টার্মে রূপান্তর।
 
-2. **সম্পূর্ণ গোপনীয় ও নিরাপদ (Zero-PII Privacy & OWASP Standards):**
-   - কোনো নাম, মোবাইল নম্বর বা ইমেইল সংগ্রহ করা হয় না।
-   - সম্পূর্ণ বেনামী র‍্যান্ডম আইডি (Anonymous UUID) দ্বারা পরিচালিত।
-   - সার্ভার লগ থেকে স্বয়ংক্রিয়ভাবে আইপি (IP address) ও ফোন নম্বর মুছে দেওয়া হয়।
-   - অডিও রূপান্তরের পর তাৎক্ষণিকভাবে মূল অডিও ধ্বংস করা হয়।
-   - **"সব তথ্য মুছে ফেলুন" (Wipe All Data):** এক ক্লিকে সার্ভার ও ডিভাইস থেকে চিরতরে সমস্ত তথ্য মুছে ফেলার সুবিধা।
+3. **সম্পূর্ণ গোপনীয় ও নিরাপদ (Zero-PII Privacy & OWASP Standards):**
+   - কোনো নাম, মোবাইল নম্বর বা ইমেইল সংগ্রহ করা হয় না। সম্পূর্ণ বেনামী রেন্ডম আইডি (Anonymous UUID) দ্বারা পরিচালিত।
+   - লগ থেকে স্বয়ংক্রিয়ভাবে আইপি (IP address) ও ফোন নম্বর মুছে ফেলা হয়।
+   - **ক্যাসকেড ডিলিশন ও অ্যাকাউন্ট ওয়াইপ:** এক ক্লিকে (`DELETE /api/v1/patient/account-data`) ডাটাবেস ও ডিভাইস থেকে রোগীর সমস্ত চ্যাট হিস্ট্রি, সামারি ও মেমোরি সম্পূর্ণ ধ্বংস করার সুবিধা।
 
-3. **পূর্ণাঙ্গ প্রগ্রেসিভ ওয়েব অ্যাপ (Offline-Ready PWA):**
-   - রুট `/manifest.json` এবং `/service-worker.js` এর মাধ্যমে যেকোনো অ্যান্ড্রয়েড ও আইওএস (iOS) ফোনে হোমস্ক্রিন অ্যাপ হিসেবে ইনস্টলযোগ্য।
-   - ১৯২px ও ৫১২px হাই-রেজোলিউশন মাস্কেবল অ্যাপ আইকন।
-   - দুর্বল নেটওয়ার্কে নির্ভরযোগ্য অফলাইন ক্যাশিং (`shoi-cache-v2`)।
-
-4. **মাসিক ও মেজাজ ট্র্যাকার (Period & Mood Tracker):**
-   - মাসিকের চক্রের হিসাব, সম্ভাব্য পরবর্তী তারিখ এবং ওভুলেশন সময়ের পূর্বাভাস (FIGO স্ট্যান্ডার্ড)।
-   - ৫টি সহজ ইমোজি দিয়ে প্রতিদিনের মনের অনুভূতি রেকর্ড ও পিএমএস (PMS) বিশ্লেষণ।
+4. **মাসিক, মেজাজ ও গর্ভাবস্থা ট্র্যাকার (Period, Mood & Pregnancy Tracker):**
+   - FIGO স্ট্যান্ডার্ড অনুযায়ী মাসিকের চক্রের পূর্বাভাস এবং ওভুলেশন ট্র্যাকিং।
+   - প্রতিদিনের মনের অনুভূতি রেকর্ড ও PMS প্যাটার্ন বিশ্লেষণ।
+   - LMP থেকে গর্ভকালীন সপ্তাহ (Gestational Weeks) ও সম্ভাব্য প্রসব তারিখ (EDD) নির্ণয় এবং মারাত্মক ৫টি গর্ভকালীন বিপদচিহ্ন প্রদর্শন।
 
 5. **পিসিওএস স্বাস্থ্য ঝুঁকি স্ক্রিনিং (PCOS Risk Screening):**
-   - ল্যাব টেস্ট ছাড়া সাধারণ লক্ষণ ও অভ্যাসের ভিত্তিতে প্রশিক্ষিত মেশিন লার্নিং মডেল (Random Forest Classifier: 93.7% Accuracy, 0.978 ROC-AUC)।
-   - স্ক্রিনিং ফলাফল কখনোই কোনো ডায়াগনোসিস নয়; সবসময় চিকিৎসকের পরামর্শ নেওয়ার দিকনির্দেশনা দেওয়া হয়।
+   - ল্যাব টেস্ট ছাড়া সাধারণ লক্ষণ ও অভ্যাসের ভিত্তিতে প্রশিক্ষিত মেশিন লার্নিং মডেল (Random Forest: ৯৩.৭% Accuracy, ০.৯৭৮ ROC-AUC)।
 
-6. **গর্ভকালীন যত্ন ও সময়রেখা (Pregnancy Care & Timeline):**
-   - শেষ মাসিকের তারিখ (LMP) থেকে সপ্তাহ ও সম্ভাব্য প্রসব তারিখ (EDD) নির্ণয়।
-   - সপ্তাহ অনুযায়ী শিশুর বৃদ্ধি এবং **৫টি মারাত্মক গর্ভকালীন বিপদচিহ্ন** প্রদর্শন।
-
-7. **বহুস্তরী জরুরি মানসিক স্বাস্থ্য সুরক্ষা (Crisis Guardrails & Helplines):**
-   - আত্মহত্যা বা চরম হতাশার লক্ষণ ধরা পড়লে সরাসরি শান্ত সমর্থনমূলক স্ক্রিন এবং **৯৯৯ (জাতীয় জরুরি সেবা)**, **১০৯ (নারী ও শিশু নির্যাতন প্রতিরোধ)** এবং **১৬২৬৩ (স্বাস্থ্য বাতায়ন)** এ সহজে কল করার বোতাম।
+6. **জরুরি মানসিক স্বাস্থ্য সুরক্ষা (Crisis Guardrails & Helplines):**
+   - আত্মহত্যার প্রবণতা বা মারাত্মক মানসিক সংকট শনাক্ত হলে তাৎক্ষণিক ৯৯৯, ১০৯ ও ১৬২৬৩ হটলাইনে যোগাযোগের প্রম্পট প্রদান।
 
 ---
 
@@ -47,102 +43,69 @@
 
 | স্তর | প্রযুক্তি | বিবরণ |
 |---|---|---|
-| **Backend API** | FastAPI, Python 3.12 | অতি দ্রুত অ্যাসিনক্রোনাস ব্যাকএন্ড |
-| **Frontend** | Responsive Mobile PWA & Flutter | যে কোনো অ্যান্ড্রয়েড ও ব্রাউজারে ইনস্টলযোগ্য |
-| **Voice / TTS** | Edge Neural TTS (`bn-BD-NabanitaNeural`) / gTTS | মানুষের মতো স্বাভাবিক বাংলা উচ্চারণ |
-| **RAG Engine** | TF-IDF / Semantic Retrieval | WHO ও স্বাস্থ্য অধিদপ্তর (DGHS) নির্দেশিকা দ্বারা নিয়ন্ত্রিত |
-| **PCOS ML Model** | Scikit-learn (Random Forest Pipeline) | ৯৩.৭% নির্ভুলতা |
-| **Database** | SQLite (Dev) / PostgreSQL (Prod) | সম্পূর্ণ ক্যাসকেডিং ডিলিশন সাপোর্ট |
+| **Backend Framework** | FastAPI, Python 3.12+ | অ্যাসিনক্রোনাস হাই-পারফরম্যান্স API |
+| **Database** | SQLite (Dev) / PostgreSQL 15 (Prod) | ফুল রিলেশনাল ও ক্যাসকেড ডিলিশন সাপোর্ট |
+| **LLM Inference** | Ollama (Qwen 2.5, Llama 3.2), OpenAI-compatible, Gemini | ফ্রি ও ওপেন সোর্স মডেল ভিত্তিক লোকাল ইনফারেন্স |
+| **RAG Knowledge Base** | BM25 / Keyword Retrieval | ১২৫টি যাচাইকৃত নথি ও ১০০টি বাস্তব প্রশ্নোত্তর |
+| **Voice / TTS** | Edge Neural TTS (`bn-BD-NabanitaNeural`) | মানুষের মতো সাবলীল বাংলা উচ্চারণ |
+| **Frontend PWA** | Progressive Web App (HTML5, CSS3, ES6) | যেকোনো ফোন বা ডেস্কটপে ইনস্টলযোগ্য |
 
 ---
 
 ## 🚀 দ্রুত চালু করার নির্দেশিকা (Quick Start Guide)
 
-### ১. ডিপেন্ডেন্সি ইনস্টল ও ভার্চুয়াল এনভায়রনমেন্ট
-প্রজেক্টে বিল্ট-ইন পাইথন এনভায়রনমেন্ট প্রস্তুত রয়েছে। ডিপেন্ডেন্সি সক্রিয় করতে:
-
+### ১. ডিপেন্ডেন্সি ইনস্টল ও এনভায়রনমেন্ট কনফিগারেশন
 ```powershell
 # ভার্চুয়াল এনভায়রনমেন্ট সক্রিয় করুন
+cd c:\Users\tasin\Desktop\CoU\CoU
 .\backend\.venv\Scripts\activate
 
-# অথবা uv দিয়ে প্যাকেজ পরিচালনা করুন
-uv pip install -r backend/requirements.txt
+# প্যাকেজ ইনস্টল
+pip install -r backend/requirements.txt
 ```
 
-### ২. ব্যাকএন্ড ও পিডব্লিউএ (PWA) চালু করুন
-```powershell
-& backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000 --reload
+### ২. এনভায়রনমেন্ট ফাইল (.env) সেটআপ
+প্রজেক্টের রুটে `.env` ফাইল তৈরি করুন (বা `.env.example` কপি করুন):
+```ini
+LLM_PROVIDER=ollama
+LLM_MODEL=qwen2.5:7b
+OLLAMA_BASE_URL=http://localhost:11434
+DATABASE_URL=sqlite:///./shoi.db
+TTS_ENGINE=edge-tts
+BANGLA_VOICE=bn-BD-NabanitaNeural
 ```
-এখন আপনার ব্রাউজারে প্রবেশ করুন:
-👉 **http://localhost:8000** — সরাসরি সই (Shoi) অ্যাপটি চালু হবে!
-👉 **http://localhost:8000/docs** — সম্পূর্ণ ইন্টারেক্টিভ Swagger API ডকস।
+
+### ৩. ব্যাকএন্ড ও পিডব্লিউএ (PWA) চালু করুন
+```powershell
+.\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000 --reload
+```
+- 👉 **http://localhost:8000** — সরাসরি সই (Shoi) ওয়েব অ্যাপ চালু হবে।
+- 👉 **http://localhost:8000/docs** — সম্পূর্ণ Swagger API ডকুমেন্টেশন।
 
 ---
 
-## 🧪 টেস্ট চালান (Automated Test Suite)
-প্রজেক্টের সমস্ত ভয়েস প্রসেসিং, মেমোরি রিটেনশন, নিরাপত্তা, প্রাইভেসি স্ক্রাবার, ক্লিনিক্যাল রুলস ও PWA টেস্ট করতে চালান:
-
-```powershell
-& backend\.venv\Scripts\python.exe -m pytest backend/tests
-```
-*ফলাফল: ৫৫টি টেস্টই সফলভাবে উত্তীর্ণ (55 passed, 100% pass rate in ~12s).*
-
----
-
-## 🐳 ডকার দিয়ে ডিপ্লয়মেন্ট (Docker Deployment)
+## 🐳 ডকার দিয়ে প্রোডাকশন ডিপ্লয়মেন্ট (Docker Compose)
+সম্পূর্ণ PostgreSQL ১৫, Ollama এবং ব্যাকএন্ড একত্রে এক কমান্ডে চালাতে:
 ```bash
 docker-compose up --build -d
 ```
+- PostgreSQL পোর্ট: `5432`
+- Ollama পোর্ট: `11434`
+- Shoi Web App পোর্ট: `8000`
 
 ---
 
-## 📁 ফোল্ডার কাঠামো (Directory Layout)
+## 🧪 স্বয়ংক্রিয় টেস্ট সুইট (Automated Test Suite)
+প্রজেক্টের সমস্ত কন্টেক্সট রিটেনশন, ৩-স্তরের মেমোরি, ১০০টি প্রশ্নোত্তর RAG, ভয়েস ও নিরাপত্তা টেস্ট করতে চালান:
+
+```powershell
+.\backend\.venv\Scripts\python.exe -m pytest backend/tests/ -v
 ```
-CoU/
-├── backend/
-│   ├── app/
-│   │   ├── api/            # /voice, /chat, /pcos, /track, /preg, /safety, /auth
-│   │   ├── core/           # security, privacy PII scrubbers, logging filters
-│   │   ├── db/             # SQLAlchemy session & database engine
-│   │   ├── models/         # SQLAlchemy pseudonymous schema with cascade deletion
-│   │   ├── schemas/        # Pydantic v2 strict data contracts
-│   │   ├── services/       # session_memory, tts, chitchat, rag, cycle_engine,
-│   │   │                   # mood_engine, pregnancy_engine, crisis_detector, pcos_model
-│   │   └── main.py         # FastAPI application, PWA static mounts, CORS & headers
-│   ├── ml/
-│   │   ├── pcos/           # train.py, model.joblib (93.7% accuracy)
-│   │   └── crisis/         # keywords_bn.json (direct, indirect, banglish)
-│   ├── knowledge_base/     # WHO & DGHS curated facts
-│   └── tests/              # 53 automated unit & integration tests
-│       ├── test_voice_chat.py              # Long-horizon memory, dialect normalization, TTS cache
-│       ├── test_pwa_real_life.py           # PWA manifest, service-worker, HTML DOM integrity
-│       ├── test_emotional_intelligence.py  # Conversational empathy & warm sisterly tone
-│       ├── test_safety.py                  # Crisis triggers & helpline escalation
-│       ├── test_privacy.py                 # Zero-PII scrubbing & GDPR compliance
-│       ├── test_cycle_engine.py            # FIGO menstrual cycle prediction
-│       ├── test_pregnancy.py               # Naegele rule EDD & danger signs
-│       ├── test_pcos.py                    # PCOS risk scoring
-│       ├── test_mood_engine.py             # Mood tracking & PMS correlations
-│       ├── test_auth.py                    # Anonymous pseudonymous tokens
-│       ├── test_validations.py             # Input sanitization
-│       ├── test_reminders.py               # Cycle alerts
-│       └── test_integration.py            # End-to-end full system flow
-├── pwa/                    # Mobile-First Progressive Web App (HTML, CSS, JS, Service Worker, Icons)
-│   ├── icon.svg            # Vector app logo
-│   ├── icon-192.png        # 192x192 maskable mobile icon
-│   ├── icon-512.png        # 512x512 splash mobile icon
-│   ├── manifest.json       # W3C Web App Manifest
-│   ├── service-worker.js   # Offline cache strategy v2
-│   ├── style.css           # Responsive mobile UI styling
-│   └── app.js              # Client state, audio equalizer, voice barge-in, chips
-├── mobile/                 # Flutter mobile codebase (pubspec.yaml, screens, widgets)
-├── docs/                   # architecture.md, privacy-policy-bn.md, safety-protocol.md, evaluation-plan.md
-└── docker-compose.yml
-```
+*(বর্তমানে ৮২+ টি টেস্ট ১০০% সফলভাবে উত্তীর্ণ)।*
 
 ---
 
 ## 🛡️ সুরক্ষা ও নৈতিকতা (Ethics & Safeguards)
-- সই কোনোভাবেই ডাক্তারের বিকল্প নয়।
+- সই কোনোভাবেই লাইসেন্সধারী ডাক্তারের বিকল্প নয়।
 - ওষুধ বা ড্রাগ ডোজ দেওয়ার উপর কঠোর নিষেধাজ্ঞা রয়েছে।
-- কোনো ব্যক্তিগত পরিচিতি সংরক্ষণ করা হয় না।
+- কোনো ব্যক্তিগত পরিচিতি (PII) বা ফোন নম্বর সংরক্ষণ করা হয় না।

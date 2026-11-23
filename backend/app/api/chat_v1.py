@@ -15,7 +15,8 @@ from sqlalchemy import desc
 
 from app.db.session import get_db
 from app.models.user import User
-from app.models.conversation import ConversationSession, ConversationMessage
+from app.models.conversation import ConversationSession, ConversationMessage, ConversationSummary
+from app.models.patient_memory import PatientMemory
 from app.models.patient import PatientProfile
 from app.models.health_logs import SymptomLog
 from app.api.deps import get_current_user
@@ -29,6 +30,7 @@ from app.schemas.chat_v1 import (
     ConversationMessageResponse,
     PatientMemoryResponse,
     PatientMemoryUpdateRequest,
+    MemoryConsentRequest,
     PatientHealthHistoryResponse
 )
 
@@ -182,6 +184,27 @@ def get_conversation_messages(
         ))
     return result
 
+@router.delete("/conversations/{conversation_id}")
+def delete_conversation(
+    conversation_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Deletes a conversation session and cascades all messages & summaries."""
+    session = (
+        db.query(ConversationSession)
+        .filter(ConversationSession.id == conversation_id, ConversationSession.user_id == current_user.id)
+        .first()
+    )
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found.")
+    
+    db.query(ConversationMessage).filter(ConversationMessage.session_id == conversation_id).delete()
+    db.query(ConversationSummary).filter(ConversationSummary.session_id == conversation_id).delete()
+    db.delete(session)
+    db.commit()
+    return {"status": "success", "message": "Conversation session and messages deleted."}
+
 # ----------------------------------------------------
 # 3. PATIENT MEMORY MANAGEMENT (LAYER 2)
 # ----------------------------------------------------
@@ -251,6 +274,34 @@ def delete_patient_memory(
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory item not found.")
     return {"status": "success", "message": "Memory item successfully deleted."}
+
+@router.post("/patient/memory-consent")
+def set_patient_memory_consent(
+    req: MemoryConsentRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Enables or disables long-term patient memory recording globally."""
+    db.query(PatientMemory).filter(PatientMemory.user_id == current_user.id).update(
+        {"consent_status": req.consent_enabled}
+    )
+    db.commit()
+    status_str = "enabled" if req.consent_enabled else "disabled"
+    return {"status": "success", "consent_enabled": req.consent_enabled, "message": f"Long-term memory has been {status_str}."}
+
+@router.delete("/patient/account-data")
+def delete_all_patient_data(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Permanently deletes all conversation history, summaries, patient memories, and health records for the patient."""
+    db.query(ConversationMessage).filter(ConversationMessage.user_id == current_user.id).delete()
+    db.query(ConversationSummary).filter(ConversationSummary.user_id == current_user.id).delete()
+    db.query(ConversationSession).filter(ConversationSession.user_id == current_user.id).delete()
+    db.query(PatientMemory).filter(PatientMemory.user_id == current_user.id).delete()
+    db.query(SymptomLog).filter(SymptomLog.user_id == current_user.id).delete()
+    db.commit()
+    return {"status": "success", "message": "All patient health data and conversation history have been permanently wiped."}
 
 # ----------------------------------------------------
 # 4. PATIENT HEALTH HISTORY TIMELINE
