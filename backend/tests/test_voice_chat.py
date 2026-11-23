@@ -82,6 +82,46 @@ def test_expanded_voice_intents():
     assert r10 is not None
     assert "আপু" in r10[0]
 
+def test_everyday_conversational_natural_talk():
+    # Backchannel & attentive listening
+    r1 = get_chitchat_response("হুম")
+    assert r1 is not None
+    assert "শুনছি" in r1[0] or "বলো" in r1[0]
+
+    r2 = get_chitchat_response("আচ্ছা")
+    assert r2 is not None
+    assert "আপু" in r2[0]
+
+    # Routine small talk
+    r3 = get_chitchat_response("কী করছো এখন?")
+    assert r3 is not None
+    assert "ফ্রি" in r3[0] or "সময়" in r3[0] or "দিন" in r3[0]
+
+    # Birthday & celebration
+    r4 = get_chitchat_response("আজ আমার জন্মদিন")
+    assert r4 is not None
+    assert "জন্মদিন" in r4[0] or "শুভকামনা" in r4[0]
+
+    # Household chores & body tiredness (not period cramps)
+    r5 = get_chitchat_response("আজ অনেক কাজ করেছি শরীর ব্যথা")
+    assert r5 is not None
+    assert "বিশ্রাম" in r5[0] or "ক্লান্তি" in r5[0] or "খাটুনি" in r5[0] or "পরিশ্রম" in r5[0] or "জিরিয়ে" in r5[0]
+
+    # Gas & Indigestion
+    r6 = get_chitchat_response("পেটে গ্যাস হয়েছে পেট ফাঁপা")
+    assert r6 is not None
+    assert "পানি" in r6[0] or "গ্যাস" in r6[0] or "আরাম" in r6[0]
+
+    # Short voice dismissal
+    r7 = get_chitchat_response("না কিছু না")
+    assert r7 is not None
+    assert "আপু" in r7[0]
+
+    # Fitness & Weight
+    r8 = get_chitchat_response("মোটা হয়ে যাচ্ছি ওজন কমাতে চাই")
+    assert r8 is not None
+    assert "ওজন" in r8[0] or "হাঁটাহাঁটি" in r8[0] or "সুস্থ" in r8[0] or "শরীরের" in r8[0] or "ডায়েট" in r8[0]
+
 def test_tts_normalization_and_micropauses():
     text = "আপু শোনো, জরুরি সেবায় ৯৯৯ কল করো। প্রেসার ও diaper চেক করো।"
     norm = normalize_bangla_speech_text(text)
