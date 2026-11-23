@@ -30,10 +30,17 @@ def normalize_bangla_speech_text(text: str) -> str:
     if not text:
         return ""
 
+    # Strip question repeating prefixes and labels if present
+    text = re.sub(r'^প্রশ্ন:[^\n]+\n*', '', text)
+    text = re.sub(r'^উত্তর:\s*', '', text)
+    text = re.sub(r'\bউত্তর:\s*', '', text)
+    text = re.sub(r'^Regarding\s+[\'"][^\'"]+[\'"]:\s*', '', text)
+
     # Strip citations & reference markers
     text = re.sub(r'\([^\)]*সূত্র[^\)]*\)', '', text)
     text = re.sub(r'\[[^\]]*সূত্র[^\]]*\]', '', text)
     text = re.sub(r'\(সূত্র:[^\)]*\)', '', text)
+    text = re.sub(r'\(Source:[^\)]*\)', '', text)
     text = re.sub(r'\[[0-9]+\]', '', text)
 
     # Strip emojis and pictographs so TTS voice doesn't stumble or pause oddly
@@ -162,24 +169,24 @@ def normalize_bangla_speech_text(text: str) -> str:
 
     return text
 
-def smart_speech_truncate(text: str, max_chars: int = 380) -> str:
+def smart_speech_truncate(text: str, max_chars: int = 4000) -> str:
     """
-    Truncates audio speech text at natural sentence boundaries without slicing words.
-    Adds a soothing conversational closing sentence if truncated.
+    Ensures complete, full-length audio readout of the entire answer.
+    Preserves comprehensive clinical explanations without premature cut-offs.
     """
     if len(text) <= max_chars:
         return text
 
     cut_zone = text[:max_chars]
     last_danda = max(cut_zone.rfind("।"), cut_zone.rfind("?"), cut_zone.rfind("!"))
-    if last_danda >= 200:
+    if last_danda >= 500:
         base = text[:last_danda + 1].strip()
         if not base.endswith(("আপু।", "সই।", "বলো।")):
             base += " আর কিছু জানতে চাইলে বলো আপু।"
         return base
 
     last_space = cut_zone.rfind(" ")
-    if last_space >= 180:
+    if last_space >= 450:
         return text[:last_space].strip() + "। আর কিছু জানতে চাইলে বলো আপু।"
 
     return cut_zone.strip() + "।"
@@ -196,9 +203,9 @@ async def text_to_speech_base64(text: str) -> Optional[str]:
 
     start_time = time.time()
 
-    # Normalize for acoustic natural speech
+    # Normalize for acoustic natural speech and retain full response
     clean_text = normalize_bangla_speech_text(text)
-    clean_text = smart_speech_truncate(clean_text, max_chars=380)
+    clean_text = smart_speech_truncate(clean_text, max_chars=4000)
 
     if not clean_text:
         return None

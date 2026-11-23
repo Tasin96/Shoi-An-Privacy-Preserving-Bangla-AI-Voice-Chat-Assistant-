@@ -45,7 +45,7 @@ def ingest_medical_documents():
                     "category": item.get("category", "womens_health"),
                     "category_bn": item.get("category_bn", ""),
                     "source": item.get("source", "DGHS Bangladesh / WHO Women's Health"),
-                    "text": item.get("text", f"প্রশ্ন: {item.get('question')}\n\nউত্তর: {item.get('answer')}").strip(),
+                    "text": item.get("answer", "").strip(),
                     "answer": item.get("answer", "").strip(),
                     "language": "bn",
                     "keywords": item.get("keywords", [])

@@ -210,22 +210,28 @@ class LLMService:
     def _build_grounded_fallback_reply(self, message: str, chunks: List[Dict[str, Any]]) -> str:
         """
         Creates an empathetic, medically precise bilingual response using matched knowledge base chunks.
+        Strictly provides the direct answer without repeating or echoing the user's question.
         """
         top_chunk = chunks[0]
+        raw_ans = top_chunk.get("answer") or top_chunk.get("text", "")
+
+        # Clean any stray "প্রশ্ন: ... \n\nউত্তর:" or "Regarding '...':"
+        clean_ans = raw_ans
+        if "উত্তর:" in clean_ans:
+            clean_ans = re.sub(r"^.*?উত্তর:\s*", "", clean_ans, flags=re.DOTALL)
+        clean_ans = re.sub(r"^প্রশ্ন:[^\n]+\n*", "", clean_ans).strip()
+        clean_ans = re.sub(r"^Regarding\s+['\"][^'\"]+['\"]:\s*", "", clean_ans).strip()
+
         if self._is_english(message):
-            greeting = "Hello, "
-            body = (
-                f"Regarding '{top_chunk['title']}':\n"
-                f"{top_chunk['text']}\n\n"
-                f"Please note: This evidence-based information is for educational screening. "
-                f"A certified gynecologist should evaluate your individual clinical profile."
-            )
-            closing = f"\n\n(Source: {top_chunk['source']})"
-            return f"{greeting}{body}{closing}"
+            closing = f"\n\n(Source: {top_chunk.get('source', 'DGHS / WHO')})"
+            return f"{clean_ans}{closing}"
 
         greeting = "আপু, "
-        body = top_chunk["text"]
-        closing = f"\n\n(সূত্র: {top_chunk['source']})"
-        return f"{greeting}{body}{closing}"
+        if clean_ans.startswith("আপু"):
+            body = clean_ans
+        else:
+            body = f"{greeting}{clean_ans}"
+        closing = f"\n\n(সূত্র: {top_chunk.get('source', 'DGHS / WHO')})"
+        return f"{body}{closing}"
 
 llm_service = LLMService()

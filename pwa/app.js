@@ -423,6 +423,18 @@ function setupSpeechAndAudioPipeline() {
         badgesDiv.appendChild(citBadge);
       }
 
+      // 1-tap Listen button to hear the full answer aloud
+      const speakBtn = document.createElement('button');
+      speakBtn.className = 'chat-badge listen-btn';
+      speakBtn.innerHTML = '🔊 শুনুন';
+      speakBtn.title = 'পুরো উত্তরটি শুনুন';
+      speakBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        primeAudioPlayback();
+        speakNativeText(content);
+      });
+      badgesDiv.appendChild(speakBtn);
+
       if (badgesDiv.children.length > 0) {
         bubble.appendChild(badgesDiv);
       }
@@ -718,6 +730,22 @@ function cleanBanglaPhonetics(text) {
   let t = text.replace(/\([^\)]*সূত্র[^\)]*\)/g, '').replace(/\[[^\]]*সূত্র[^\]]*\]/g, '');
   t = t.replace(/\(সূত্র:[^\)]*\)/g, '');
   
+  // Strip question repeating prefixes and source citations
+  t = t.replace(/^প্রশ্ন:[^\n]+\n*/gi, '');
+  t = t.replace(/^উত্তর:\s*/gi, '');
+  t = t.replace(/\bউত্তর:\s*/gi, '');
+  t = t.replace(/^Regarding\s+['"][^'"]+['"]:\s*/gi, '');
+  t = t.replace(/\(সূত্র:[^)]*\)/gi, '');
+  t = t.replace(/\(Source:[^)]*\)/gi, '');
+
+  // Naturalize bullet items for speech
+  t = t.replace(/(?:^|\n|\s)১[\.\)]\s*/g, '\nপ্রথমত, ');
+  t = t.replace(/(?:^|\n|\s)২[\.\)]\s*/g, '\nদ্বিতীয়ত, ');
+  t = t.replace(/(?:^|\n|\s)৩[\.\)]\s*/g, '\nতৃতীয়ত, ');
+  t = t.replace(/(?:^|\n|\s)৪[\.\)]\s*/g, '\nচতুর্থত, ');
+  t = t.replace(/(?:^|\n|\s)৫[\.\)]\s*/g, '\nপঞ্চমত, ');
+  t = t.replace(/(?:^|\n|\s)[•\-\*]\s*/g, ', ');
+
   // English acronyms to Bangla phonetics
   t = t.replace(/\bPCOS\b|\bpcos\b/gi, 'পিসিওএস');
   t = t.replace(/\bBMI\b|\bbmi\b/gi, 'বিএমআই');
@@ -744,31 +772,56 @@ function cleanBanglaPhonetics(text) {
 }
 
 function speakNativeText(text) {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    const cleanText = cleanBanglaPhonetics(text);
-    const utterance = new SpeechSynthesisUtterance(cleanText);
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const cleanText = cleanBanglaPhonetics(text);
+  if (!cleanText) return;
+
+  // Split into natural sentences so long answers are read in full without browser 15s timeout
+  const rawSentences = cleanText.split(/([।?!]+|\n+)/);
+  const sentences = [];
+  for (let i = 0; i < rawSentences.length; i += 2) {
+    const s = (rawSentences[i] || '') + (rawSentences[i + 1] || '');
+    const trimmed = s.trim();
+    if (trimmed) sentences.push(trimmed);
+  }
+
+  if (sentences.length === 0) return;
+
+  setVoiceState('speaking');
+
+  const voices = window.speechSynthesis.getVoices();
+  const bnVoice = voices.find(v => 
+    v.lang === 'bn-BD' || 
+    v.lang.startsWith('bn') || 
+    v.name.includes('Bangla') || 
+    v.name.includes('Bengali') || 
+    v.name.includes('Nabanita')
+  );
+
+  let currentIndex = 0;
+  function speakNext() {
+    if (currentIndex >= sentences.length) {
+      setVoiceState('idle');
+      return;
+    }
+    const currentText = sentences[currentIndex++];
+    const utterance = new SpeechSynthesisUtterance(currentText);
     utterance.lang = 'bn-BD';
-    
-    // Pick the most natural female Bangla voice available
-    const voices = window.speechSynthesis.getVoices();
-    const bnVoice = voices.find(v => 
-      v.lang === 'bn-BD' || 
-      v.lang.startsWith('bn') || 
-      v.name.includes('Bangla') || 
-      v.name.includes('Bengali') || 
-      v.name.includes('Nabanita')
-    );
     if (bnVoice) utterance.voice = bnVoice;
-    
     utterance.rate = isSlowSpeed ? 0.78 : 0.92;
     utterance.pitch = 1.0;
-    
-    setVoiceState('speaking');
-    utterance.onend = () => setVoiceState('idle');
-    utterance.onerror = () => setVoiceState('idle');
+
+    utterance.onend = () => {
+      speakNext();
+    };
+    utterance.onerror = () => {
+      setVoiceState('idle');
+    };
     window.speechSynthesis.speak(utterance);
   }
+
+  speakNext();
 }
 
 function displayVoiceResponse(data) {

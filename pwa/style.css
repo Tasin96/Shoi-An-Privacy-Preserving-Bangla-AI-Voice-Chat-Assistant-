@@ -1097,6 +1097,23 @@ body {
   color: #92400e;
 }
 
+.chat-badge.listen-btn {
+  background: #fdf2f8;
+  color: #be185d;
+  border: 1px solid #fbcfe8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.chat-badge.listen-btn:hover {
+  background: #fce7f3;
+  border-color: #ec4899;
+}
+
 /* Patient Memory Modal */
 .memory-modal-card {
   max-width: 480px;

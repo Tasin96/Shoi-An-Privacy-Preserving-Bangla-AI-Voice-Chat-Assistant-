@@ -98,3 +98,41 @@ def test_chat_v1_endpoint_with_womens_health_question():
     assert len(data["response"]) > 20
     assert data["context_used"]["medical_knowledge"] is True
     assert len(data["sources"]) > 0
+    # Strict validation: answer must NOT repeat or echo the question
+    assert "প্রশ্ন:" not in data["response"]
+    assert "Regarding" not in data["response"]
+
+def test_voice_api_direct_answer_and_full_length_tts():
+    """Verify voice API returns direct answer without repeating question and synthesizes full speech."""
+    from app.services.tts import smart_speech_truncate, normalize_bangla_speech_text
+
+    # 1. Test speech length preservation (no premature 380-char truncation)
+    long_medical_text = (
+        "মাসিক নিয়মিত ও স্বাস্থ্যকর রাখতে হরমোনের স্বাভাবিক ভারসাম্য বজায় রাখা অত্যন্ত জরুরি, "
+        "যার একটি বড় ভিত্তি হলো সুষম ও পুষ্টিকর খাদ্যতালিকা। সবুজ শাকসবজি ও রঙিন ফলমূল নিয়মিত খাদ্যতালিকায় "
+        "রাখা প্রয়োজন, বিশেষ করে পালং শাক, লাল শাক, ব্রকলি, গাজর ও পেঁপে। এগুলো শরীরে আয়রন ও ফলিক অ্যাসিডের ঘাটতি "
+        "পূরণ করে এবং শরীরে রক্তের স্বাভাবিক সঞ্চালন নিশ্চিত করে। এছাড়া ডিম, ছোট মাছ, ডাল ও বাদাম থেকে পর্যাপ্ত "
+        "প্রোটিন গ্রহণ করা উচিত। অতিরিক্ত চিনিযুক্ত খাবার, সফট ড্রিঙ্কস ও ভাজাপোড়া হরমোনের ভারসাম্য নষ্ট করতে পারে, "
+        "তাই এগুলো পরিহার করে প্রতিদিন অন্তত আড়াই থেকে তিন লিটার বিশুদ্ধ পানি পান করা উচিত।"
+    )
+    assert len(long_medical_text) > 500
+    clean_speech = normalize_bangla_speech_text(long_medical_text)
+    full_speech = smart_speech_truncate(clean_speech, max_chars=4000)
+    # Full explanation preserved without slicing
+    assert len(full_speech) >= 450
+    assert "আর কিছু জানতে চাইলে" not in full_speech
+
+    # 2. Test voice API call
+    voice_res = client.post(
+        "/voice",
+        json={"direct_transcript": "মাসিক নিয়মিত রাখার জন্য কী ধরনের খাবার খাওয়া উচিত?"}
+    )
+    assert voice_res.status_code == 200
+    vdata = voice_res.json()
+    assert "reply_text" in vdata
+    assert len(vdata["reply_text"]) > 30
+    # Must be direct answer: no question echoing
+    assert "প্রশ্ন:" not in vdata["reply_text"]
+    assert "Regarding" not in vdata["reply_text"]
+    assert vdata["audio_base64"] is not None
+
