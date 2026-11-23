@@ -316,27 +316,132 @@ function setupSpeechAndAudioPipeline() {
     }
   });
 
-  // Text chat drawer toggle
+  // Context-Aware Text Chat & Memory Manager Integration
   const toggleBtn = document.getElementById('toggleTextChatBtn');
   const chatDrawer = document.getElementById('textChatDrawer');
   const chatInput = document.getElementById('chatInput');
   const sendBtn = document.getElementById('sendChatBtn');
+  const chatMessagesList = document.getElementById('chatMessagesList');
+  const chatSessionTitle = document.getElementById('chatSessionTitle');
+  const newChatSessionBtn = document.getElementById('newChatSessionBtn');
+  const openMemoriesBtn = document.getElementById('openMemoriesBtn');
+  const patientMemoriesModal = document.getElementById('patientMemoriesModal');
+  const closeMemoriesModalBtn = document.getElementById('closeMemoriesModalBtn');
+  const memoriesListContainer = document.getElementById('memoriesListContainer');
+
+  let currentConvId = localStorage.getItem('shoi_conv_id') || null;
+
+  async function loadConversationHistory() {
+    if (!currentConvId || !chatMessagesList) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/conversations/${currentConvId}/messages`, {
+        headers: getAuthHeaders()
+      });
+      if (res.ok) {
+        const msgs = await res.json();
+        chatMessagesList.innerHTML = '';
+        msgs.forEach(m => renderChatBubble(m.role, m.content, m.citations));
+        chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
+      }
+    } catch (err) {
+      console.warn('Could not load chat history:', err);
+    }
+  }
+
+  function renderChatBubble(role, content, citations, contextUsed) {
+    if (!chatMessagesList) return;
+    const bubble = document.createElement('div');
+    bubble.className = `chat-bubble ${role}`;
+    bubble.textContent = content;
+
+    if (role === 'assistant') {
+      const badgesDiv = document.createElement('div');
+      badgesDiv.className = 'chat-bubble-badges';
+
+      if (contextUsed && contextUsed.patient_memory) {
+        const memBadge = document.createElement('span');
+        memBadge.className = 'chat-badge memory';
+        memBadge.textContent = '🧠 মেমোরি সংযুক্ত';
+        badgesDiv.appendChild(memBadge);
+      }
+
+      if (citations && citations.length > 0) {
+        const citBadge = document.createElement('span');
+        citBadge.className = 'chat-badge citation';
+        citBadge.textContent = `📚 ${citations[0].split('(')[0]}`;
+        badgesDiv.appendChild(citBadge);
+      }
+
+      if (badgesDiv.children.length > 0) {
+        bubble.appendChild(badgesDiv);
+      }
+    }
+
+    chatMessagesList.appendChild(bubble);
+    chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
+  }
+
+  async function sendContextChatMessage(text) {
+    renderChatBubble('user', text);
+    chatInput.value = '';
+    sendBtn.disabled = true;
+    sendBtn.textContent = '...';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/chat/message`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({
+          conversation_id: currentConvId,
+          message: text
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        currentConvId = data.conversation_id;
+        localStorage.setItem('shoi_conv_id', currentConvId);
+        renderChatBubble('assistant', data.response, data.sources, data.context_used);
+
+        // Also update voice card and speak if needed
+        lastReplyText = data.response;
+        responseText.textContent = data.response;
+        voiceResponseCard.style.display = 'block';
+
+        if (data.safety_flags && data.safety_flags.includes('crisis_detected')) {
+          if (emergencyModal) emergencyModal.style.display = 'flex';
+        }
+      } else {
+        renderChatBubble('assistant', 'দুঃখিত আপু, উত্তর প্রক্রিয়াকরণে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+      }
+    } catch (err) {
+      console.error('Chat error:', err);
+      renderChatBubble('assistant', 'নেটওয়ার্ক সংযোগ নেই বা ত্রুটি দেখা দিয়েছে।');
+    } finally {
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'পাঠান';
+    }
+  }
 
   toggleBtn.addEventListener('click', () => {
     primeAudioPlayback();
     const isHidden = chatDrawer.style.display === 'none';
     chatDrawer.style.display = isHidden ? 'block' : 'none';
     toggleBtn.textContent = isHidden ? '❌ চ্যাট বন্ধ করুন' : '⌨️ লিখে জিজ্ঞাসা করুন';
-    if (isHidden) chatInput.focus();
+    if (isHidden) {
+      chatInput.focus();
+      loadConversationHistory();
+    }
   });
 
   sendBtn.addEventListener('click', () => {
     primeAudioPlayback();
     const text = chatInput.value.trim();
     if (text) {
-      chatInput.value = '';
-      setVoiceState('thinking');
-      sendVoiceQuery(text);
+      sendContextChatMessage(text);
     }
   });
 
@@ -345,6 +450,94 @@ function setupSpeechAndAudioPipeline() {
       sendBtn.click();
     }
   });
+
+  if (newChatSessionBtn) {
+    newChatSessionBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/conversations`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders()
+          },
+          body: JSON.stringify({ title: 'নতুন আলোচনা' })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          currentConvId = data.id;
+          localStorage.setItem('shoi_conv_id', currentConvId);
+          if (chatMessagesList) chatMessagesList.innerHTML = '';
+          if (chatSessionTitle) chatSessionTitle.textContent = '💬 নতুন আলোচনা';
+          showToast('নতুন কথোপকথন তৈরি হয়েছে।');
+        }
+      } catch (e) {
+        currentConvId = null;
+        localStorage.removeItem('shoi_conv_id');
+        if (chatMessagesList) chatMessagesList.innerHTML = '';
+        showToast('নতুন সেশন শুরু হয়েছে।');
+      }
+    });
+  }
+
+  async function loadPatientMemoriesUI() {
+    if (!memoriesListContainer) return;
+    memoriesListContainer.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">তথ্য লোড হচ্ছে...</p>';
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/patient/memories`, {
+        headers: getAuthHeaders()
+      });
+      if (res.ok) {
+        const mems = await res.json();
+        if (mems.length === 0) {
+          memoriesListContainer.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:12px 0;">এখনও কোনো স্বাস্থ্য তথ্য সংরক্ষিত নেই। কথোপকথনে মাসিকের দৈর্ঘ্য বা লক্ষণ শেয়ার করলে সই তা স্বয়ংক্রিয়ভাবে মনে রাখবে।</p>';
+          return;
+        }
+        memoriesListContainer.innerHTML = '';
+        mems.forEach(m => {
+          const card = document.createElement('div');
+          card.className = 'memory-item-card';
+          card.innerHTML = `
+            <div class="memory-item-content">
+              <h4>${m.category} • ${m.key}</h4>
+              <p>${m.value}</p>
+            </div>
+            <button class="memory-del-btn" data-id="${m.id}" title="মুছুন">🗑️</button>
+          `;
+          card.querySelector('.memory-del-btn').addEventListener('click', async (e) => {
+            const memId = e.target.getAttribute('data-id');
+            const delRes = await fetch(`${API_BASE}/api/v1/patient/memories/${memId}`, {
+              method: 'DELETE',
+              headers: getAuthHeaders()
+            });
+            if (delRes.ok) {
+              showToast('তথ্যটি সফলভাবে মুছে ফেলা হয়েছে।');
+              loadPatientMemoriesUI();
+            }
+          });
+          memoriesListContainer.appendChild(card);
+        });
+      }
+    } catch (e) {
+      memoriesListContainer.innerHTML = '<p style="color:red;font-size:13px;">মেমোরি লোড করা যায়নি।</p>';
+    }
+  }
+
+  if (openMemoriesBtn) {
+    openMemoriesBtn.addEventListener('click', () => {
+      if (patientMemoriesModal) {
+        patientMemoriesModal.style.display = 'flex';
+        loadPatientMemoriesUI();
+      }
+    });
+  }
+
+  if (closeMemoriesModalBtn) {
+    closeMemoriesModalBtn.addEventListener('click', () => {
+      if (patientMemoriesModal) patientMemoriesModal.style.display = 'none';
+    });
+  }
+
+  loadConversationHistory();
 }
 
 function setupVoiceSpeedToggle() {

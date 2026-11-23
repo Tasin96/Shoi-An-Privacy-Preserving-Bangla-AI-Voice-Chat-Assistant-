@@ -17,12 +17,15 @@ class Settings(BaseSettings):
         f"sqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'shoi.db'))}"
     )
 
-    # LLM Settings
-    LLM_PROVIDER: str = "gemini"  # gemini, openai, or mock
+    # LLM Settings - Open-source, Local & Multi-provider
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "ollama")  # ollama, openai_compatible, gemini, or mock
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen2.5:7b")
+    OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    LLM_TIMEOUT_SECONDS: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "30.0"))
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY", "")
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY", "")
-    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
-    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_BASE_URL: str = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
     # Voice / Audio Settings
     TTS_ENGINE: str = "edge-tts"  # edge-tts, gtts, or web

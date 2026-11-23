@@ -22,6 +22,7 @@ from app.api.consultation import router as consultation_router
 from app.api.ml_admin import router as ml_admin_router
 from app.api.health_profile import router as health_profile_router
 from app.api.medical_reports import router as medical_reports_router
+from app.api.chat_v1 import router as chat_v1_router
 
 # Configure privacy-preserving logging
 root_logger = logging.getLogger()
@@ -61,6 +62,7 @@ app.include_router(consultation_router)
 app.include_router(ml_admin_router)
 app.include_router(health_profile_router)
 app.include_router(medical_reports_router)
+app.include_router(chat_v1_router)
 
 @app.get("/health")
 def health_check():

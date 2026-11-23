@@ -33,3 +33,5 @@ class User(Base):
     medical_reports = relationship("MedicalReport", back_populates="user", cascade="all, delete-orphan")
     consultations = relationship("Consultation", back_populates="patient", cascade="all, delete-orphan")
     health_assessments = relationship("HealthAssessment", back_populates="user", cascade="all, delete-orphan")
+    conversations = relationship("ConversationSession", back_populates="user", cascade="all, delete-orphan")
+    patient_memories = relationship("PatientMemory", back_populates="user", cascade="all, delete-orphan")
