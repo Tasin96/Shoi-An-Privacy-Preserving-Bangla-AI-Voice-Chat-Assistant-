@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shoi-cache-v3';
+const CACHE_NAME = 'shoi-cache-v4';
 const ASSETS = [
   '/',
   '/pwa/index.html',

@@ -73,6 +73,13 @@ class BanglaRAGService:
                 print(f"Error loading knowledge base: {e}")
                 self.chunks = []
 
+    def reload(self):
+        """Explicitly reloads knowledge base chunks and recalculates document frequencies."""
+        self.chunks = []
+        self.doc_freq = Counter()
+        self.num_docs = 0
+        self._load_knowledge_base()
+
     def _tokenize(self, text: str) -> List[str]:
         text = normalize_bangla_text(text.lower())
         for p in "।,?!:;\"'()[]{}<>-/\\":

@@ -17,23 +17,44 @@ def _get_cache_key(text: str) -> str:
 
 def normalize_bangla_speech_text(text: str) -> str:
     """
-    Normalizes Bangla text for natural, fluent, and correct acoustic pronunciation:
-    1. Strips internal markdown, bullets, and parenthetical citations
+    Normalizes Bangla text for natural, fluent, and tender acoustic pronunciation:
+    1. Strips internal markdown, bullets, emojis, and parenthetical citations
     2. Transliterates common English acronyms & loanwords to Bangla phonetics (e.g. PCOS -> পিসিওএস)
-    3. Converts English numerals (0-9) to Bengali numerals (০-৯) so TTS speaks native Bangla
-    4. Expands emergency hotlines (999, 109, 16263) into full phonetic Bangla words
-    5. Converts range hyphens (e.g. ১-২ দিন) into natural Bangla phrase (১ থেকে ২ দিন)
+    3. Naturalizes bulleted lists (১. -> প্রথমত, ২. -> দ্বিতীয়ত) for human conversational cadence
+    4. Converts English numerals (0-9) to Bengali numerals (০-৯)
+    5. Phonetically expands numbers with units (e.g. ২ গ্লাস -> দুই গ্লাস, ৩ বার -> তিন বার)
+    6. Expands emergency hotlines (999, 109, 16263, 333, 1098) into full phonetic Bangla words
+    7. Converts range hyphens (e.g. ১-২ দিন) into natural Bangla phrase (১ থেকে ২ দিন)
+    8. Inserts tender vocative micro-pauses (আপু, সই, শোনো, চিন্তা করো না)
     """
     if not text:
         return ""
 
-    # Strip citations
+    # Strip citations & reference markers
     text = re.sub(r'\([^\)]*সূত্র[^\)]*\)', '', text)
     text = re.sub(r'\[[^\]]*সূত্র[^\]]*\]', '', text)
     text = re.sub(r'\(সূত্র:[^\)]*\)', '', text)
     text = re.sub(r'\[[0-9]+\]', '', text)
 
-    # Phonetic normalization for medical acronyms & common terms
+    # Strip emojis and pictographs so TTS voice doesn't stumble or pause oddly
+    emoji_pattern = re.compile(
+        r'[\U00010000-\U0010ffff]|'
+        r'[\u2600-\u27bf]|'
+        r'[\u2300-\u23ff]|'
+        r'[\ufe0e\ufe0f]|'
+        r'[🌸🩸🤰🩺❤️🚨💡😊🤲👶🍵☕🍎✨🙏💪🌿💧☀️🌙🩹👩‍⚕️🕊️]'
+    )
+    text = emoji_pattern.sub('', text)
+
+    # Naturalize bullet lists into human conversational discourse connectors
+    text = re.sub(r'(?:^|\n|\s)১[\.\)]\s*', '\nপ্রথমত, ', text)
+    text = re.sub(r'(?:^|\n|\s)২[\.\)]\s*', '\nদ্বিতীয়ত, ', text)
+    text = re.sub(r'(?:^|\n|\s)৩[\.\)]\s*', '\nতৃতীয়ত, ', text)
+    text = re.sub(r'(?:^|\n|\s)৪[\.\)]\s*', '\nচতুর্থত, ', text)
+    text = re.sub(r'(?:^|\n|\s)৫[\.\)]\s*', '\nপঞ্চমত, ', text)
+    text = re.sub(r'(?:^|\n|\s)[•\-\*]\s*', ', ', text)
+
+    # Phonetic normalization for medical acronyms, clinical terms & common English loanwords
     phonetic_map = [
         (r'\bPCOS\b|\bpcos\b', 'পিসিওএস'),
         (r'\bBMI\b|\bbmi\b', 'বিএমআই'),
@@ -43,30 +64,45 @@ def normalize_bangla_speech_text(text: str) -> str:
         (r'\bSMS\b|\bsms\b', 'এসএমএস'),
         (r'\bWHO\b|\bwho\b', 'হু'),
         (r'\bDGHS\b|\bdghs\b', 'ডিজিএইচএস'),
+        (r'\bDGFP\b|\bdgfp\b', 'ডিজিএফপি'),
+        (r'\bANC\b|\banc\b', 'গর্ভকালীন চেকআপ'),
+        (r'\bPNC\b|\bpnc\b', 'প্রসবোত্তর চেকআপ'),
+        (r'\bOPD\b|\bopd\b', 'বহিঃবিভাগ'),
+        (r'\bBP\b|\bbp\b', 'ব্লাড প্রেসার'),
+        (r'\bpressure\b|\bPressure\b', 'প্রেসার'),
+        (r'\bsugar\b|\bSugar\b', 'সুগার'),
         (r'\bDr\b\.?|\bdr\b\.?', 'ডাক্তার'),
+        (r'\bdoctor\b|\bDoctor\b', 'ডাক্তার'),
+        (r'\bclinic\b|\bClinic\b', 'ক্লিনিক'),
+        (r'\bhospital\b|\bHospital\b', 'হাসপাতাল'),
+        (r'\bmedicine\b|\bMedicine\b', 'ওষুধ'),
+        (r'\btablet\b|\bTablet\b', 'ট্যাবলেট'),
+        (r'\bsyrup\b|\bSyrup\b', 'সিরাপ'),
+        (r'\bcapsule\b|\bCapsule\b', 'ক্যাপসুল'),
+        (r'\bantibiotic\b|\bAntibiotic\b', 'অ্যান্টিবায়োটিক'),
+        (r'\binjection\b|\bInjection\b', 'ইনজেকশন'),
+        (r'\bambulance\b|\bAmbulance\b', 'অ্যাম্বুলেন্স'),
+        (r'\bemergency\b|\bEmergency\b', 'জরুরি সেবা'),
+        (r'\bcesarean\b|\bcaesarean\b|\bc-section\b', 'সিজার'),
+        (r'\bdelivery\b|\bDelivery\b', 'ডেলিভারি'),
+        (r'\bultrasound\b|\bUltrasound\b|\bUSG\b|\busg\b', 'আল্ট্রাসনোগ্রাম'),
         (r'\bmg\b|\bMG\b', 'মিলিগ্রাম'),
         (r'\bkg\b|\bKG\b', 'কেজি'),
         (r'\bml\b|\bML\b', 'মিলি'),
         (r'\bcm\b|\bCM\b', 'সেন্টিমিটার'),
         (r'\bapp\b|\bApp\b', 'অ্যাপ'),
         (r'\bUTI\b|\buti\b', 'ইউটিআই'),
-        (r'\bDGFP\b|\bdgfp\b', 'ডিজিএফপি'),
-        (r'\bBSE\b|\bbse\b', 'বিএসই'),
-        (r'\bBCS\b|\bbcs\b', 'বিসিএস'),
-        (r'\bPWA\b|\bpwa\b', 'পিডব্লিউএ'),
-        (r'\bUUID\b|\buuid\b', 'ইউআইডি'),
-        (r'\bclinic\b|\bClinic\b', 'ক্লিনিক'),
-        (r'\bhospital\b|\bHospital\b', 'হাসপাতাল'),
-        (r'\bdoctor\b|\bDoctor\b', 'ডাক্তার'),
-        (r'\btest\b|\bTest\b', 'টেস্ট'),
-        (r'\bcheckup\b|\bCheckup\b', 'চেকআপ'),
-        (r'\bnormal\b|\bNormal\b', 'নরমাল'),
-        (r'\bultrasound\b|\bUltrasound\b|\bUSG\b|\busg\b', 'আল্ট্রাসনোগ্রাম'),
         (r'\bcalcium\b|\bCalcium\b', 'ক্যালসিয়াম'),
         (r'\biron\b|\bIron\b', 'আয়রন'),
         (r'\bfolic acid\b|\bFolic Acid\b', 'ফলিক অ্যাসিড'),
         (r'\bdiaper\b|\bDiaper\b', 'ডায়াপার'),
         (r'\bsaline\b|\bSaline\b', 'স্যালাইন'),
+        (r'\btest\b|\bTest\b', 'টেস্ট'),
+        (r'\bcheckup\b|\bCheckup\b', 'চেকআপ'),
+        (r'\bnormal\b|\bNormal\b', 'নরমাল'),
+        (r'\broutine\b|\bRoutine\b', 'রুটিন'),
+        (r'\bdiet\b|\bDiet\b', 'ডায়েট'),
+        (r'\bexercise\b|\bExercise\b', 'ব্যায়াম'),
     ]
     for pattern, replacement in phonetic_map:
         text = re.sub(pattern, replacement, text)
@@ -89,9 +125,26 @@ def normalize_bangla_speech_text(text: str) -> str:
     # Expand ranges like '১-২ দিন' or '২১-৩৫ দিন' to '১ থেকে ২ দিন'
     text = re.sub(r'([০-৯]+)\s*[-–—]\s*([০-৯]+)', r'\1 থেকে \2', text)
 
+    # Phonetic expansion of numbers with common units for authentic conversational Bangla
+    unit_pattern = r'(টা|টি|বার|দিন|মাস|বছর|সপ্তাহ|ঘণ্টা|গ্লাস|চামচ|কেজি|লিটার|ফোটা|প্যাকেট)'
+    text = re.sub(rf'(?<![০-৯])১\s*{unit_pattern}', r'এক \1', text)
+    text = re.sub(rf'(?<![০-৯])২\s*{unit_pattern}', r'দুই \1', text)
+    text = re.sub(rf'(?<![০-৯])৩\s*{unit_pattern}', r'তিন \1', text)
+    text = re.sub(rf'(?<![০-৯])৪\s*{unit_pattern}', r'চার \1', text)
+    text = re.sub(rf'(?<![০-৯])৫\s*{unit_pattern}', r'পাঁচ \1', text)
+    text = re.sub(rf'(?<![০-৯])৬\s*{unit_pattern}', r'ছয় \1', text)
+    text = re.sub(rf'(?<![০-৯])৭\s*{unit_pattern}', r'সাত \1', text)
+    text = re.sub(rf'(?<![০-৯])৮\s*{unit_pattern}', r'আট \1', text)
+    text = re.sub(rf'(?<![০-৯])৯\s*{unit_pattern}', r'নয় \1', text)
+    text = re.sub(rf'(?<![০-৯])১০\s*{unit_pattern}', r'দশ \1', text)
+
     # Conversational vocative micro-pauses for tender, human sisterly cadence
     # e.g., "আপু শোনো" -> "আপু, শোনো"
-    text = re.sub(r'\b(আপু|শোনো|মনে রেখো|দেখো|আচ্ছা|হ্যাঁ)\s+(?![!,?.।])', r'\1, ', text)
+    text = re.sub(
+        r'(?<![\u0980-\u09ffA-Za-z])(আপু|শোনো|মনে রেখো|দেখো|আচ্ছা|হ্যাঁ|সই|চিন্তা করো না|ভয় পেও না)\s+(?![!,?.।])',
+        r'\1, ',
+        text
+    )
 
     # Strip markdown symbols and formatting
     text = text.replace('*', '').replace('#', '').replace('`', '').replace('~', '').replace('>', '')
@@ -112,6 +165,7 @@ def normalize_bangla_speech_text(text: str) -> str:
 def smart_speech_truncate(text: str, max_chars: int = 380) -> str:
     """
     Truncates audio speech text at natural sentence boundaries without slicing words.
+    Adds a soothing conversational closing sentence if truncated.
     """
     if len(text) <= max_chars:
         return text
@@ -119,11 +173,14 @@ def smart_speech_truncate(text: str, max_chars: int = 380) -> str:
     cut_zone = text[:max_chars]
     last_danda = max(cut_zone.rfind("।"), cut_zone.rfind("?"), cut_zone.rfind("!"))
     if last_danda >= 200:
-        return text[:last_danda + 1].strip()
+        base = text[:last_danda + 1].strip()
+        if not base.endswith(("আপু।", "সই।", "বলো।")):
+            base += " আর কিছু জানতে চাইলে বলো আপু।"
+        return base
 
     last_space = cut_zone.rfind(" ")
     if last_space >= 180:
-        return text[:last_space].strip() + "।"
+        return text[:last_space].strip() + "। আর কিছু জানতে চাইলে বলো আপু।"
 
     return cut_zone.strip() + "।"
 
@@ -161,12 +218,12 @@ async def text_to_speech_base64(text: str) -> Optional[str]:
         if settings.TTS_ENGINE == "edge-tts":
             try:
                 import edge_tts
-                # Paced down slightly (-4%) for warm, soothing rural comprehension
+                # Paced down slightly (-3%) for warm, soothing rural comprehension
                 communicate = edge_tts.Communicate(
                     clean_text,
                     voice=settings.BANGLA_VOICE,
-                    rate="-4%",
-                    pitch="+0Hz"
+                    rate="-3%",
+                    pitch="+1Hz"
                 )
                 await communicate.save(temp_path)
             except Exception as e:

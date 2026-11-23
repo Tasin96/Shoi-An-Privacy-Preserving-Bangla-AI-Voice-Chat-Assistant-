@@ -164,18 +164,35 @@ function setupSpeechAndAudioPipeline() {
     recognition = new SpeechRecognition();
     recognition.lang = 'bn-BD'; // Standard Bangla
     recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
 
     recognition.onstart = () => {
       isRecording = true;
+      if (navigator.vibrate) try { navigator.vibrate(35); } catch (e) {}
       setVoiceState('listening');
     };
 
     recognition.onresult = async (event) => {
-      const transcript = event.results[0][0].transcript;
-      console.log('Recognized speech:', transcript);
-      setVoiceState('thinking');
-      await sendVoiceQuery(transcript);
+      let interim = '';
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+
+      if (interim && isRecording) {
+        voiceStatusText.textContent = `🎙️ "${interim}"`;
+      }
+
+      if (finalTranscript) {
+        console.log('Recognized speech:', finalTranscript);
+        if (navigator.vibrate) try { navigator.vibrate(40); } catch (e) {}
+        setVoiceState('thinking');
+        await sendVoiceQuery(finalTranscript);
+      }
     };
 
     recognition.onerror = (event) => {
@@ -199,6 +216,7 @@ function setupSpeechAndAudioPipeline() {
 
   micBtn.addEventListener('click', async () => {
     primeAudioPlayback();
+    if (navigator.vibrate) try { navigator.vibrate(30); } catch (e) {}
 
     // If currently speaking, interrupt and stop audio immediately
     if (voiceStatus.className.includes('speaking')) {
@@ -274,9 +292,20 @@ function setupSpeechAndAudioPipeline() {
     }
   });
 
-  // Replay audio
+  // Replay / Stop audio toggle
   replayVoiceBtn.addEventListener('click', () => {
     primeAudioPlayback();
+    if (voiceStatus.className.includes('speaking')) {
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      setVoiceState('idle');
+      return;
+    }
     if (lastAudioBase64) {
       audioPlayer.src = `data:audio/mp3;base64,${lastAudioBase64}`;
       setVoiceState('speaking');
@@ -348,6 +377,16 @@ function setVoiceState(state) {
   } else {
     if (audioEqualizer) audioEqualizer.style.display = 'none';
     if (micIcon) micIcon.style.opacity = '1';
+  }
+
+  if (replayVoiceBtn) {
+    if (state === 'speaking') {
+      replayVoiceBtn.textContent = '⏹️ থামান';
+      replayVoiceBtn.title = 'কণ্ঠস্বর থামান';
+    } else {
+      replayVoiceBtn.textContent = '🔊 শুনুন';
+      replayVoiceBtn.title = 'পুনরায় শুনুন';
+    }
   }
 
   if (state === 'listening') {

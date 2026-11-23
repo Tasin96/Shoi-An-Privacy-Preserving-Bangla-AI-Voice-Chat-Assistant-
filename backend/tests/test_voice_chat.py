@@ -202,3 +202,61 @@ async def test_regional_dialects_and_banglish_voice_chat():
 
     r8 = await llm_service.generate_response("সর্দি লেগেছে নাক বন্ধ")
     assert "গরম" in r8.reply or "চা" in r8.reply or "লবণ" in r8.reply
+
+@pytest.mark.asyncio
+async def test_detailed_pcos_knowledge_and_qa():
+    # 1. Pregnancy & Fertility in PCOS
+    p1 = await llm_service.generate_response("পিসিওএস হলে কি বাচ্চা বা সন্তান হওয়া সম্ভব?")
+    assert "গর্ভধারণ" in p1.reply or "ওভুলেশন" in p1.reply or "সন্তান" in p1.reply or "বাচ্চা" in p1.reply
+    assert len(p1.citations) > 0
+
+    # 2. PCOS Diet & Nutrition
+    p2 = await llm_service.generate_response("পিসিওএস এর খাদ্যতালিকা ও ডায়েট কেমন হবে?")
+    assert "খাদ্যতালিকা" in p2.reply or "শাকসবজি" in p2.reply or "চিনি" in p2.reply or "বীজ" in p2.reply
+    assert len(p2.citations) > 0
+
+    # 3. PCOD vs PCOS difference
+    p3 = await llm_service.generate_response("পিসিওডি এবং পিসিওএস এর পার্থক্য কি?")
+    assert "PCOD" in p3.reply or "পার্থক্য" in p3.reply or "সিন্ড্রোম" in p3.reply
+    assert len(p3.citations) > 0
+
+    # 4. Hirsutism & Facial Hair in PCOS
+    p4 = await llm_service.generate_response("পিসিওএস এ মুখে অবাঞ্ছিত লোম গজায় কেন?")
+    assert "লোম" in p4.reply or "হরমোন" in p4.reply or "টেস্টোস্টেরন" in p4.reply
+    assert len(p4.citations) > 0
+
+    # 5. Diagnostic Tests for PCOS
+    p5 = await llm_service.generate_response("পিসিওএস নিশ্চিত হতে কি কি রক্ত পরীক্ষা ও টেস্ট করতে হয়?")
+    assert "আল্ট্রাসনোগ্রাম" in p5.reply or "টেস্ট" in p5.reply or "হরমোন" in p5.reply or "USG" in p5.reply
+    assert len(p5.citations) > 0
+
+    # 6. PCOS Cure vs Long-term Control
+    p6 = await llm_service.generate_response("পিসিওএস কি চিরতরে ভালো হয় নাকি নিয়ন্ত্রণে রাখতে হয়?")
+    assert "নিয়ন্ত্রণ" in p6.reply or "জীবনযাত্রা" in p6.reply or "ডায়াবেটিস" in p6.reply
+    assert len(p6.citations) > 0
+
+@pytest.mark.asyncio
+async def test_expanded_everyday_conversational_intents():
+    # Daily cooking & meal banter
+    c1 = await llm_service.generate_response("আজকে কি রান্না করব বল তো?")
+    assert "রান্না" in c1.reply or "ডিম" in c1.reply or "ডাল" in c1.reply
+
+    # Weather talk
+    c2 = await llm_service.generate_response("আজকে অনেক গরম লাগছে")
+    assert "গরম" in c2.reply or "পানি" in c2.reply or "শরবত" in c2.reply
+
+    # Good news & happiness
+    c3 = await llm_service.generate_response("আজ একটা সুখবর আছে")
+    assert "আনন্দ" in c3.reply or "খুশি" in c3.reply or "সুখবর" in c3.reply
+
+    # Jokes & humor
+    c4 = await llm_service.generate_response("একটা মজার কৌতুক শোনাও তো")
+    assert "ডাক্তার" in c4.reply or "হাসি" in c4.reply or "কৌতুক" in c4.reply
+
+    # Mic check
+    c5 = await llm_service.generate_response("আমার কথা কি শুনতে পাচ্ছো?")
+    assert "পরিষ্কার" in c5.reply or "শুনতে" in c5.reply or "বলুন" in c5.reply
+
+    # Temporary stepping away
+    c6 = await llm_service.generate_response("আমি একটু পর আসছি")
+    assert "ঠিক আছে" in c6.reply or "অপেক্ষা" in c6.reply or "খেয়াল" in c6.reply
