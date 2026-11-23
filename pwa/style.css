@@ -267,46 +267,6 @@ body {
   border-color: var(--primary);
 }
 
-/* Dynamic Spoken Follow-up Suggestions */
-.voice-suggestions-box {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px dashed rgba(196, 91, 122, 0.25);
-}
-
-.suggestions-title {
-  display: block;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--primary);
-  margin-bottom: 8px;
-}
-
-.suggestions-chips-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.suggested-voice-chip {
-  background: #fff;
-  border: 1px solid rgba(196, 91, 122, 0.3);
-  color: #4a3e3d;
-  border-radius: 18px;
-  padding: 6px 12px;
-  font-size: 0.82rem;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-  transition: all 0.2s ease;
-}
-
-.suggested-voice-chip:hover {
-  background: var(--primary-light);
-  border-color: var(--primary);
-  color: var(--primary-dark);
-  transform: translateY(-1px);
-}
-
 @keyframes speakingPulse {
   0% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 0 0 rgba(216, 50, 112, 0.5); }
   50% { transform: scale(1.22); opacity: 0.35; box-shadow: 0 0 25px 10px rgba(216, 50, 112, 0.25); }
