@@ -98,12 +98,15 @@
 
         <!-- Quick Question Chips -->
         <div class="quick-questions">
-          <span class="quick-title">প্রয়োজনীয় সাধারণ প্রশ্ন:</span>
+          <span class="quick-title">প্রয়োজনীয় স্বাস্থ্য প্রশ্ন (চাপুন):</span>
           <div class="chips-row">
             <button class="chip" data-q="পিরিয়ডের ব্যথা কমানোর সহজ উপায় কি?">🩸 পিরিয়ডের ব্যথা</button>
             <button class="chip" data-q="পিসিওএস এর সাধারণ লক্ষণ কি কি?">🩺 পিসিওএস লক্ষণ</button>
-            <button class="chip" data-q="গর্ভাবস্থার ৫টি প্রধান বিপদচিহ্ন কি কি?">🤰 গর্ভের বিপদচিহ্ন</button>
+            <button class="chip" data-q="আমার প্রতিদিন সাদা স্রাব হয়, এটা কি স্বাভাবিক?">🤍 সাদা স্রাব</button>
+            <button class="chip" data-q="স্তনে ব্যথা বা ভারী লাগলে কি করা উচিত?">🎀 স্তনের স্বাস্থ্য</button>
             <button class="chip" data-q="পিরিয়ডের সময় কতক্ষণ পর প্যাড বদলাতে হয়?">🌸 পরিচ্ছন্নতা</button>
+            <button class="chip" data-q="প্রস্রাবের সময় জ্বালাপোড়া করলে কি করা উচিত?">💧 প্রস্রাবে জ্বালাপোড়া</button>
+            <button class="chip" data-q="মাসিক নিয়মিত রাখার জন্য কী ধরনের খাবার খাওয়া উচিত?">🥗 পুষ্টিকর খাবার</button>
           </div>
         </div>
 
@@ -121,7 +124,26 @@
             </div>
           </div>
           <div id="chatMessagesList" class="chat-messages-list">
-            <!-- Dynamic persistent messages rendered here -->
+            <div class="chat-welcome-card" id="chatWelcomeCard">
+              <div class="welcome-badge">🌸 আপুর সাথে কথা বলুন</div>
+              <div class="welcome-text">
+                <strong>আপু, আমি তোমার ব্যক্তিগত স্বাস্থ্য সই।</strong>
+                <p>মাসিক, সাদা স্রাব, স্তন, পিসিওএস কিংবা গোপন শারীরিক অস্বস্তি—যেকোনো বিষয়ে নিঃসংকোচে কথা বলো। তোমার সব তথ্য সম্পূর্ণ সুরক্ষিত ও গোপন থাকবে।</p>
+              </div>
+              <div class="starter-chips-container">
+                <span class="starter-label">কী নিয়ে কথা বলতে চাও? বেছে নাও:</span>
+                <div class="starter-chips">
+                  <button class="starter-chip" data-prompt="আপু, আমার মাসিক নিয়মিত হয় না। এটা নিয়ে কথা বলতে চাই।">🩸 মাসিক নিয়মিত হচ্ছে না</button>
+                  <button class="starter-chip" data-prompt="আমার সাদা স্রাব নিয়ে কিছু প্রশ্ন আছে।">🤍 সাদা স্রাব নিয়ে প্রশ্ন</button>
+                  <button class="starter-chip" data-prompt="আমার PCOS হয়েছে কি না, সেটা নিয়ে চিন্তিত।">🩺 PCOS হয়েছে কি না?</button>
+                  <button class="starter-chip" data-prompt="মাসিকের সময় তীব্র পেটব্যথা কমানোর ঘরোয়া উপায় কি?">⚡ পিরিয়ডে পেটে ব্যথা</button>
+                  <button class="starter-chip" data-prompt="আমার স্তনে কিছু পরিবর্তন লক্ষ্য করছি। এ বিষয়ে জানতে চাই।">🎀 স্তনে ব্যথা বা পরিবর্তন</button>
+                  <button class="starter-chip" data-prompt="প্রস্রাবের সময় জ্বালাপোড়া ও অস্বস্তি হচ্ছে।">💧 প্রস্রাবে জ্বালাপোড়া</button>
+                  <button class="starter-chip" data-prompt="আমার মানসিক অবস্থা ও হরমোনের পরিবর্তন নিয়ে সাহায্য দরকার।">💭 মেজাজ খিটখিটে ও মানসিক অস্বস্তি</button>
+                  <button class="starter-chip" data-prompt="ব্যক্তিগত স্বাস্থ্য নিয়ে কিছু কথা জানতে চাই, যা কাউকে বলতে পারি না।">🔒 ব্যক্তিগত গোপন স্বাস্থ্যকথা</button>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="chat-input-row">
             <input type="text" id="chatInput" placeholder="আপনার কথা বা প্রশ্নটি এখানে লিখুন..." />

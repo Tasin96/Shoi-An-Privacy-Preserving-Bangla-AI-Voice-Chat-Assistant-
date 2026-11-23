@@ -224,6 +224,21 @@ class MockLLMProvider(BaseLLMProvider):
                 model_name="mock-gynecologist-v1"
             )
 
+        # Check if RAG retrieved a grounded Women's Health Q&A answer in system_prompt
+        if "Relevant Medical Knowledge Documents" in system_prompt and "উত্তর:" in system_prompt:
+            match = re.search(r"উত্তর:\s*(.*?)(?=\n\s*\[|\n\s*###|\Z)", system_prompt, re.DOTALL)
+            if match:
+                extracted_ans = match.group(1).strip()
+                extracted_ans = re.sub(r"\]$", "", extracted_ans).strip()
+                if extracted_ans:
+                    return ProviderResponse(
+                        text=extracted_ans,
+                        tokens_used=len(extracted_ans.split()),
+                        latency_ms=20.0,
+                        provider_name="mock",
+                        model_name="mock-gynecologist-v1"
+                    )
+
         if "cycle" in p_lower or "usual" in p_lower:
             reply = "How long is your usual menstrual cycle, Apu? Is it usually within 28 to 35 days, or does it take longer?"
             return ProviderResponse(

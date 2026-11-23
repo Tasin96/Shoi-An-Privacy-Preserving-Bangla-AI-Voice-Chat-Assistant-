@@ -331,8 +331,48 @@ function setupSpeechAndAudioPipeline() {
 
   let currentConvId = localStorage.getItem('shoi_conv_id') || null;
 
+  function renderWelcomeStarters() {
+    if (!chatMessagesList) return;
+    chatMessagesList.innerHTML = `
+      <div class="chat-welcome-card" id="chatWelcomeCard">
+        <div class="welcome-badge">🌸 আপুর সাথে কথা বলুন</div>
+        <div class="welcome-text">
+          <strong>আপু, আমি তোমার ব্যক্তিগত স্বাস্থ্য সই।</strong>
+          <p>মাসিক, সাদা স্রাব, স্তন, পিসিওএস কিংবা গোপন শারীরিক অস্বস্তি—যেকোনো বিষয়ে নিঃসংকোচে কথা বলো। তোমার সব তথ্য সম্পূর্ণ সুরক্ষিত ও গোপন থাকবে।</p>
+        </div>
+        <div class="starter-chips-container">
+          <span class="starter-label">কী নিয়ে কথা বলতে চাও? বেছে নাও:</span>
+          <div class="starter-chips">
+            <button class="starter-chip" data-prompt="আপু, আমার মাসিক নিয়মিত হয় না। এটা নিয়ে কথা বলতে চাই।">🩸 মাসিক নিয়মিত হচ্ছে না</button>
+            <button class="starter-chip" data-prompt="আমার সাদা স্রাব নিয়ে কিছু প্রশ্ন আছে।">🤍 সাদা স্রাব নিয়ে প্রশ্ন</button>
+            <button class="starter-chip" data-prompt="আমার PCOS হয়েছে কি না, সেটা নিয়ে চিন্তিত।">🩺 PCOS হয়েছে কি না?</button>
+            <button class="starter-chip" data-prompt="মাসিকের সময় তীব্র পেটব্যথা কমানোর ঘরোয়া উপায় কি?">⚡ পিরিয়ডে পেটে ব্যথা</button>
+            <button class="starter-chip" data-prompt="আমার স্তনে কিছু পরিবর্তন লক্ষ্য করছি। এ বিষয়ে জানতে চাই।">🎀 স্তনে ব্যথা বা পরিবর্তন</button>
+            <button class="starter-chip" data-prompt="প্রস্রাবের সময় জ্বালাপোড়া ও অস্বস্তি হচ্ছে।">💧 প্রস্রাবে জ্বালাপোড়া</button>
+            <button class="starter-chip" data-prompt="আমার মানসিক অবস্থা ও হরমোনের পরিবর্তন নিয়ে সাহায্য দরকার।">💭 মেজাজ খিটখিটে ও মানসিক অস্বস্তি</button>
+            <button class="starter-chip" data-prompt="ব্যক্তিগত স্বাস্থ্য নিয়ে কিছু কথা জানতে চাই, যা কাউকে বলতে পারি না।">🔒 ব্যক্তিগত গোপন স্বাস্থ্যকথা</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    chatMessagesList.querySelectorAll('.starter-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        primeAudioPlayback();
+        const prompt = btn.getAttribute('data-prompt');
+        if (prompt) {
+          sendContextChatMessage(prompt);
+        }
+      });
+    });
+  }
+
   async function loadConversationHistory() {
-    if (!currentConvId || !chatMessagesList) return;
+    if (!chatMessagesList) return;
+    if (!currentConvId) {
+      renderWelcomeStarters();
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/v1/conversations/${currentConvId}/messages`, {
         headers: getAuthHeaders()
@@ -340,16 +380,27 @@ function setupSpeechAndAudioPipeline() {
       if (res.ok) {
         const msgs = await res.json();
         chatMessagesList.innerHTML = '';
-        msgs.forEach(m => renderChatBubble(m.role, m.content, m.citations));
-        chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
+        if (!msgs || msgs.length === 0) {
+          renderWelcomeStarters();
+        } else {
+          msgs.forEach(m => renderChatBubble(m.role, m.content, m.citations));
+          chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
+        }
+      } else {
+        renderWelcomeStarters();
       }
     } catch (err) {
       console.warn('Could not load chat history:', err);
+      renderWelcomeStarters();
     }
   }
 
   function renderChatBubble(role, content, citations, contextUsed) {
     if (!chatMessagesList) return;
+    const welcomeCard = document.getElementById('chatWelcomeCard');
+    if (welcomeCard) {
+      welcomeCard.remove();
+    }
     const bubble = document.createElement('div');
     bubble.className = `chat-bubble ${role}`;
     bubble.textContent = content;
@@ -466,14 +517,14 @@ function setupSpeechAndAudioPipeline() {
           const data = await res.json();
           currentConvId = data.id;
           localStorage.setItem('shoi_conv_id', currentConvId);
-          if (chatMessagesList) chatMessagesList.innerHTML = '';
+          if (chatMessagesList) renderWelcomeStarters();
           if (chatSessionTitle) chatSessionTitle.textContent = '💬 নতুন আলোচনা';
           showToast('নতুন কথোপকথন তৈরি হয়েছে।');
         }
       } catch (e) {
         currentConvId = null;
         localStorage.removeItem('shoi_conv_id');
-        if (chatMessagesList) chatMessagesList.innerHTML = '';
+        if (chatMessagesList) renderWelcomeStarters();
         showToast('নতুন সেশন শুরু হয়েছে।');
       }
     });

@@ -7,9 +7,10 @@ from typing import List, Dict, Any, Tuple
 from collections import Counter
 from app.config import settings
 
-KB_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "knowledge_base", "raw", "medical_kb_bn.json"
-)
+KB_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "knowledge_base")
+PROCESSED_KB_PATH = os.path.join(KB_DIR, "processed", "knowledge_base.json")
+RAW_KB_PATH = os.path.join(KB_DIR, "raw", "medical_kb_bn.json")
+RAW_QA_PATH = os.path.join(KB_DIR, "raw", "womens_health_100_qa.json")
 
 BANGLA_STOPWORDS = {
     "কি", "কী", "কে", "কেন", "কার", "কিভাবে", "হলে", "হলো", "হলে কি", "বা", "ও", "এবং", "আর",
@@ -60,18 +61,34 @@ class BanglaRAGService:
         self._load_knowledge_base()
 
     def _load_knowledge_base(self):
-        if os.path.exists(KB_PATH):
+        self.chunks = []
+        
+        # 1. Prefer processed consolidated KB if exists
+        if os.path.exists(PROCESSED_KB_PATH):
             try:
-                with open(KB_PATH, "r", encoding="utf-8") as f:
+                with open(PROCESSED_KB_PATH, "r", encoding="utf-8") as f:
                     self.chunks = json.load(f)
-                    self.num_docs = len(self.chunks)
-                    for chunk in self.chunks:
-                        tokens = set(self._tokenize(chunk["title"] + " " + chunk["text"]))
-                        for t in tokens:
-                            self.doc_freq[t] += 1
             except Exception as e:
-                print(f"Error loading knowledge base: {e}")
-                self.chunks = []
+                print(f"Error loading processed knowledge base: {e}")
+
+        # 2. If processed KB not found, load raw files
+        if not self.chunks:
+            for p in [RAW_KB_PATH, RAW_QA_PATH]:
+                if os.path.exists(p):
+                    try:
+                        with open(p, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                            self.chunks.extend(data)
+                    except Exception as e:
+                        print(f"Error loading raw KB from {p}: {e}")
+
+        self.num_docs = len(self.chunks)
+        for chunk in self.chunks:
+            title_text = chunk.get("title", "") + " " + chunk.get("question", "")
+            body_text = chunk.get("text", "") + " " + chunk.get("answer", "")
+            tokens = set(self._tokenize(f"{title_text} {body_text}"))
+            for t in tokens:
+                self.doc_freq[t] += 1
 
     def reload(self):
         """Explicitly reloads knowledge base chunks and recalculates document frequencies."""
@@ -100,8 +117,10 @@ class BanglaRAGService:
 
         scored_chunks = []
         for chunk in self.chunks:
-            title_tokens = set(self._tokenize(chunk["title"]))
-            body_tokens = self._tokenize(chunk["text"])
+            title_str = chunk.get("title", "") + " " + chunk.get("question", "")
+            keywords_str = " ".join(chunk.get("keywords", [])) if isinstance(chunk.get("keywords"), list) else ""
+            title_tokens = set(self._tokenize(f"{title_str} {keywords_str}"))
+            body_tokens = self._tokenize(chunk.get("text", "") + " " + chunk.get("answer", ""))
             chunk_tokens = title_tokens.union(set(body_tokens))
 
             score = 0.0
@@ -109,20 +128,23 @@ class BanglaRAGService:
                 if qt in chunk_tokens:
                     df = self.doc_freq.get(qt, 1)
                     idf = math.log((self.num_docs + 1) / (df + 0.5)) + 1.0
-                    weight = 3.0 if qt in title_tokens else 1.0
+                    weight = 3.5 if qt in title_tokens else 1.0
                     score += idf * weight
 
             if score > 0:
                 normalized_score = min(1.0, score / (len(query_tokens) * 3.5 + 1e-5))
                 scored_chunks.append({
-                    "id": chunk["id"],
-                    "title": chunk["title"],
-                    "source": chunk["source"],
-                    "text": chunk["text"],
-                    "score": round(normalized_score, 3)
+                    "id": chunk.get("id"),
+                    "title": chunk.get("title", ""),
+                    "question": chunk.get("question", ""),
+                    "category": chunk.get("category", ""),
+                    "source": chunk.get("source", "DGHS / WHO"),
+                    "text": chunk.get("text", ""),
+                    "score": round(normalized_score, 3),
+                    "_raw_score": score
                 })
 
-        scored_chunks.sort(key=lambda x: x["score"], reverse=True)
+        scored_chunks.sort(key=lambda x: x["_raw_score"], reverse=True)
         top_results = scored_chunks[:top_k]
 
         top_score = top_results[0]["score"] if top_results else 0.0

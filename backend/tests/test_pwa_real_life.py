@@ -60,6 +60,6 @@ def test_dom_id_consistency():
     js_text = (pwa_dir / "app.js").read_text(encoding="utf-8")
     js_ids = set(re.findall(r"document\.getElementById\(['\"]([^'\"]+)['\"]\)", js_text))
     html_ids = set(re.findall(r"id=['\"]([^'\"]+)['\"]", html_text))
-    # shoiToast is dynamically created if not present
-    missing = (js_ids - html_ids) - {"shoiToast"}
+    # shoiToast and chatWelcomeCard can be dynamically generated
+    missing = (js_ids - html_ids) - {"shoiToast", "chatWelcomeCard"}
     assert len(missing) == 0, f"Missing IDs in HTML: {missing}"
