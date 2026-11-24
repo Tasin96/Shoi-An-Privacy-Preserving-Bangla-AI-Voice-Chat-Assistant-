@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupSettings();
   setupQuickQuestions();
   setupVoiceSpeedToggle();
+  setupSharedPhonePrivacyFeatures();
 });
 
 // Helper for auth headers
@@ -811,6 +812,9 @@ function speakNativeText(text) {
     if (bnVoice) utterance.voice = bnVoice;
     utterance.rate = isSlowSpeed ? 0.78 : 0.92;
     utterance.pitch = 1.0;
+    if (isEarpieceMode) {
+      utterance.volume = 0.35;
+    }
 
     utterance.onend = () => {
       speakNext();
@@ -1259,6 +1263,125 @@ function setupSettings() {
       } catch (e) {
         console.error(e);
         showToast('সার্ভারের সাথে যোগাযোগ করা যায়নি।', true);
+      }
+    }
+  });
+}
+
+// 9. Shared-Phone Privacy & Decoy Camouflage Features
+let isEarpieceMode = localStorage.getItem('shoi_earpiece_mode') === 'true';
+let earpieceDeviceId = null;
+let decoyTapCount = 0;
+let decoyLastTapTime = 0;
+
+function setupSharedPhonePrivacyFeatures() {
+  const panicCamouflageBtn = document.getElementById('panicCamouflageBtn');
+  const earpieceModeBtn = document.getElementById('earpieceModeBtn');
+  const decoyCamouflageOverlay = document.getElementById('decoyCamouflageOverlay');
+  const decoyHeader = document.getElementById('decoyHeader');
+
+  // Find earpiece device if supported
+  if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+      const earpiece = devices.find(d => d.kind === 'audiooutput' && (d.label.toLowerCase().includes('earpiece') || d.label.toLowerCase().includes('receiver')));
+      if (earpiece) earpieceDeviceId = earpiece.deviceId;
+    }).catch(() => {});
+  }
+
+  function updateEarpieceUI() {
+    if (!earpieceModeBtn) return;
+    if (isEarpieceMode) {
+      earpieceModeBtn.textContent = '👂 ইয়ারপিস মোড';
+      earpieceModeBtn.classList.add('earpiece-active');
+    } else {
+      earpieceModeBtn.textContent = '👂 স্পিকার';
+      earpieceModeBtn.classList.remove('earpiece-active');
+    }
+  }
+
+  if (earpieceModeBtn) {
+    updateEarpieceUI();
+    earpieceModeBtn.addEventListener('click', () => {
+      isEarpieceMode = !isEarpieceMode;
+      localStorage.setItem('shoi_earpiece_mode', isEarpieceMode);
+      updateEarpieceUI();
+      showToast(isEarpieceMode ? 'ইয়ারপিস মোড চালু: ফোনটি কানের কাছে নিয়ে শুনুন' : 'স্পিকার মোড চালু');
+    });
+  }
+
+  // Panic Camouflage Overlay Handlers
+  function activateCamouflage() {
+    if (!decoyCamouflageOverlay) return;
+    decoyCamouflageOverlay.style.display = 'block';
+    // Immediate acoustic silence
+    if (audioPlayer) audioPlayer.pause();
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (isRecording && recognition) {
+      try { recognition.abort(); } catch (e) {}
+      isRecording = false;
+      setVoiceState('idle');
+    }
+  }
+
+  function restoreFromCamouflage() {
+    if (!decoyCamouflageOverlay) return;
+    decoyCamouflageOverlay.style.display = 'none';
+    showToast('স্বাভাবিক স্ক্রিনে ফেরা হয়েছে');
+  }
+
+  if (panicCamouflageBtn) {
+    panicCamouflageBtn.addEventListener('click', () => {
+      activateCamouflage();
+    });
+  }
+
+  // Triple-Tap restoration gesture on decoy overlay header
+  function handleTripleTapRestore() {
+    const now = Date.now();
+    if (now - decoyLastTapTime < 1400) {
+      decoyTapCount++;
+      if (decoyTapCount >= 3) {
+        decoyTapCount = 0;
+        restoreFromCamouflage();
+      }
+    } else {
+      decoyTapCount = 1;
+    }
+    decoyLastTapTime = now;
+  }
+
+  if (decoyHeader) {
+    decoyHeader.addEventListener('click', handleTripleTapRestore);
+  }
+  if (decoyCamouflageOverlay) {
+    decoyCamouflageOverlay.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'decoyRestoreHint') {
+        handleTripleTapRestore();
+      }
+    });
+  }
+
+  // Accelerometer flip gesture (face-down triggers camouflage)
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', (event) => {
+      if (event.gamma !== null && (Math.abs(event.gamma) > 150 || (event.beta !== null && event.beta < -40))) {
+        activateCamouflage();
+      }
+    }, { passive: true });
+  }
+
+  // RAM-only Hygiene: Auto-silence when app goes to background
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      if (audioPlayer) audioPlayer.pause();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      if (isRecording && recognition) {
+        try { recognition.abort(); } catch (e) {}
+        isRecording = false;
+        setVoiceState('idle');
+      }
+      if (isEarpieceMode) {
+        activateCamouflage();
       }
     }
   });

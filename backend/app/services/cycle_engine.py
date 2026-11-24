@@ -120,3 +120,81 @@ def analyze_cycles(
         warning_flag=warning_flag,
         explanation_bn="\n".join(explanation_parts)
     )
+
+import re
+
+COVERT_CYCLE_METAPHORS = [
+    # 1. Cycle Start (LMP)
+    {
+        "patterns": [
+            r"লাল\s*ফুল\s*ফুটেছে",
+            r"মেহমান\s*(?:আসছে|এসেছে|আইছে|আসলো)",
+            r"শরীর\s*(?:খারাপ\s*হয়েছে|ভাঙছে|ভাংছে)",
+            r"মাসিক\s*(?:শুরু|হয়েছে|আসছে)",
+            r"লাল\s*দিন\s*শুরু",
+            r"ডেট\s*শুরু\s*হয়েছে"
+        ],
+        "event_type": "cycle_start",
+        "action": "log_period_start",
+        "confirmation_bn": "আপনার মাসিকের প্রথম দিনের তথ্য সই মনে রেখেছে। আরাম করুন এবং গরম পানি খান।"
+    },
+    # 2. Active Bleeding / Heavy Flow
+    {
+        "patterns": [
+            r"কাপড়\s*নষ্ট\s*(?:হয়েছে|হইছে|হচ্ছে)",
+            r"অপবিত্র\s*দিন",
+            r"বেশি\s*রক্ত\s*(?:যাচ্ছে|পড়ছে)",
+            r"বারবার\s*কাপড়\s*বদল",
+            r"ভারী\s*কাজ\s*করতে\s*পারব\s*না"
+        ],
+        "event_type": "active_flow",
+        "action": "log_symptom_flow",
+        "confirmation_bn": "আপনার তথ্য নথিভুক্ত করা হয়েছে। এই সময়ে ভারী কাজ এড়িয়ে পর্যাপ্ত বিশ্রাম নিন।"
+    },
+    # 3. Cycle End / Cleansing
+    {
+        "patterns": [
+            r"শরীর\s*পবিত্র\s*হয়েছে",
+            r"পবিত্র\s*হয়েছি",
+            r"গোসল\s*(?:করেছি|সেরেছি|করলাম)",
+            r"শরীর\s*ভালো\s*হয়ে\s*গেছে",
+            r"রক্ত\s*বন্ধ\s*হয়েছে",
+            r"মাসিক\s*শেষ\s*হয়েছে"
+        ],
+        "event_type": "cycle_end",
+        "action": "log_period_end",
+        "confirmation_bn": "মাসিক সম্পন্ন হওয়ার তথ্য সংরক্ষিত হয়েছে।"
+    },
+    # 4. Dysmenorrhea / Cramps
+    {
+        "patterns": [
+            r"তলপেটে\s*(?:মোচড়|মোচড়\s*দিচ্ছে|চাবায়|কামড়ায়)",
+            r"পেট\s*কামড়ায়",
+            r"তলপেট\s*চাবায়",
+            r"কোমরে\s*(?:টান|ব্যথা)",
+            r"তলপেটে\s*খুব\s*ব্যথা"
+        ],
+        "event_type": "cramps",
+        "action": "log_symptom_cramps",
+        "confirmation_bn": "পেটের ব্যথার কথা বুঝতে পেরেছি। তলপেটে গরম সেঁক দিন এবং আদা চা খেতে পারেন।"
+    }
+]
+
+def decode_covert_cycle_metaphor(text: str) -> Optional[dict]:
+    """
+    Decodes covert rural Bengali metaphors into structured reproductive health cycle events,
+    allowing women on shared devices to log cycles without speaking explicit clinical words aloud.
+    """
+    if not text:
+        return None
+    norm_text = text.strip().lower()
+    for entry in COVERT_CYCLE_METAPHORS:
+        for pat in entry["patterns"]:
+            if re.search(pat, norm_text):
+                return {
+                    "event_type": entry["event_type"],
+                    "action": entry["action"],
+                    "confirmation_bn": entry["confirmation_bn"],
+                    "matched_pattern": pat
+                }
+    return None

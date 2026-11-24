@@ -28,9 +28,14 @@
           <span class="privacy-badge">🔒 সম্পূর্ণ গোপন ও নিরাপদ</span>
         </div>
       </div>
-      <button id="emergencyTriggerBtn" class="emergency-quick-btn" title="জরুরি সহায়তা">
-        🚨 জরুরি
-      </button>
+      <div class="header-actions">
+        <button id="panicCamouflageBtn" class="decoy-trigger-btn" title="তাত্ক্ষণিক গোপন মোড (Camouflage)">
+          🛡️ গোপন মোড
+        </button>
+        <button id="emergencyTriggerBtn" class="emergency-quick-btn" title="জরুরি সহায়তা">
+          🚨 জরুরি
+        </button>
+      </div>
     </header>
 
     <!-- Main Screens Container -->
@@ -71,6 +76,7 @@
           <div class="card-header">
             <span class="card-tag">🌸 সই-এর উত্তর</span>
             <div class="card-voice-actions">
+              <button id="earpieceModeBtn" class="speed-toggle-btn" title="ইয়ারপিস মোড (কানে নিয়ে শুনুন)">👂 স্পিকার</button>
               <button id="voiceSpeedBtn" class="speed-toggle-btn" title="কণ্ঠস্বরের গতি পরিবর্তন">🔊 স্বাভাবিক</button>
               <button id="replayVoiceBtn" class="replay-btn" title="পুনরায় শুনুন">🔊 শুনুন</button>
             </div>
@@ -475,6 +481,38 @@
         </p>
         <div id="memoriesListContainer" class="memories-list-container">
           <!-- Dynamic memory items loaded via API -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Decoy Camouflage Screen for Shared Phone Privacy -->
+    <div id="decoyCamouflageOverlay" class="decoy-overlay" style="display: none;">
+      <div class="decoy-container">
+        <div class="decoy-header" id="decoyHeader">
+          <span class="decoy-icon">🍳</span>
+          <div class="decoy-title-wrap">
+            <h3>দৈনন্দিন সহজ রান্নার রেসিপি</h3>
+            <span class="decoy-sub">ঘরোয়া রান্নার প্রতিদিনের ডায়েরি</span>
+          </div>
+        </div>
+        <div class="decoy-body">
+          <div class="recipe-card">
+            <h4>🥘 নরম ভুনা খিচুড়ি রান্নার নিয়ম</h4>
+            <p><strong>উপকরণ:</strong> বাসমতী বা পোলাও চাল ২ কাপ, মুগ ডাল ১ কাপ, পেঁয়াজ কুচি, আদা বাটা, হলুদ গুঁড়ো ও কাঁচামরিচ।</p>
+            <p><strong>পদ্ধতি:</strong> মুগ ডাল হালকা ভেজে চালের সাথে ধুয়ে নিন। পাত্রে তেল গরম করে পেঁয়াজ বাদামি করে মসলা কষিয়ে চাল-ডাল ঢেলে দিন। দ্বিগুণ পরিমাণ পানি দিয়ে দমে রাখুন ২০ মিনিট।</p>
+          </div>
+          <div class="recipe-card">
+            <h4>🥔 সুস্বাদু ঘরোয়া আলুভর্তা</h4>
+            <p><strong>উপকরণ:</strong> সেদ্ধ আলু ৩টি, শুকনা মরিচ ভাজা ২টি, খাঁটি সরিষার তেল ১ চা চামচ, পেঁয়াজ কুচি ও লবণ।</p>
+            <p><strong>পদ্ধতি:</strong> মরিচ ও পেঁয়াজ সামান্য লবণ দিয়ে মেখে সেদ্ধ আলুর সাথে সরিষার তেল দিয়ে ভালোভাবে চটকে নিন।</p>
+          </div>
+          <div class="recipe-card">
+            <h4>🍵 লেবু-আদা গরম চা</h4>
+            <p>পানিতে আদা কুচি দিয়ে ফুটিয়ে নামিয়ে সামান্য লেবুর রস ও মধু মিশিয়ে গরম গরম পান করুন। ক্লান্তি দূর হবে।</p>
+          </div>
+        </div>
+        <div class="decoy-footer">
+          <p id="decoyRestoreHint" class="decoy-hint">পর্দার ওপরে ৩ বার দ্রুত ট্যাপ করে স্বাভাবিক অ্যাপে ফিরুন</p>
         </div>
       </div>
     </div>

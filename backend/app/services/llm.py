@@ -41,12 +41,16 @@ class LLMService:
         # Step 1: Safety & Crisis Check (Suicide & Self-Harm)
         safety_result = detect_crisis(message)
         if safety_result.risk_level == "high":
-            return ChatResponse(
-                reply=(
+            if safety_result.is_veiled_crisis and safety_result.emergency_payload and safety_result.emergency_payload.bystander_safe_audio_bn:
+                reply_text = safety_result.emergency_payload.bystander_safe_audio_bn
+            else:
+                reply_text = (
                     "আপু, আপনার কষ্ট আমরা বুঝতে পারছি। আপনি একা নন, আপনার জীবন অত্যন্ত মূল্যবান। "
                     "অনুগ্রহ করে নিজের কোনো ক্ষতি করবেন না। নিচের লাল বোতামটিতে চাপ দিলে আপনার ফোন থেকে সরাসরি ৯৯৯ নম্বরে ফ্রিতে কল চলে যাবে। "
                     "আমরা এবং সাহায্যকারী দল আপনার পাশে আছি।"
-                ),
+                )
+            return ChatResponse(
+                reply=reply_text,
                 confidence=1.0,
                 risk_level="high",
                 emergency_payload=safety_result.emergency_payload
@@ -60,6 +64,18 @@ class LLMService:
                 reply=comfort_reply,
                 citations=[],
                 confidence=0.95,
+                risk_level="none",
+                emergency_payload=None
+            )
+
+        # Step 1.8: Covert Vernacular Cycle Metaphor Resolver (Shared Phone Private Voice)
+        from app.services.cycle_engine import decode_covert_cycle_metaphor
+        covert_event = decode_covert_cycle_metaphor(message)
+        if covert_event:
+            return ChatResponse(
+                reply=covert_event["confirmation_bn"],
+                citations=[],
+                confidence=0.98,
                 risk_level="none",
                 emergency_payload=None
             )

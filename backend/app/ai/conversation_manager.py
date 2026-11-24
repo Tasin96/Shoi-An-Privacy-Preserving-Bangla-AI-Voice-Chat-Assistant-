@@ -62,11 +62,16 @@ class ConversationManager:
         # 2. Safety & Crisis Detection
         safety_result = detect_crisis(message)
         if safety_result.risk_level == "high":
-            reply_text = (
-                "আপু, আপনার কষ্ট আমরা বুঝতে পারছি। আপনি একা নন, আপনার জীবন অত্যন্ত মূল্যবান। "
-                "অনুগ্রহ করে নিজের কোনো ক্ষতি করবেন না। নিচের জরুরি বোতামটিতে চাপ দিয়ে অথবা সরাসরি ৯৯৯ নম্বরে কল করুন। "
-                "আমরা আপনার পাশে আছি।"
-            )
+            if safety_result.is_veiled_crisis and safety_result.emergency_payload and safety_result.emergency_payload.bystander_safe_audio_bn:
+                reply_text = safety_result.emergency_payload.bystander_safe_audio_bn
+                safety_flags = ["veiled_crisis_detected", "covert_safety_alert"]
+            else:
+                reply_text = (
+                    "আপু, আপনার কষ্ট আমরা বুঝতে পারছি। আপনি একা নন, আপনার জীবন অত্যন্ত মূল্যবান। "
+                    "অনুগ্রহ করে নিজের কোনো ক্ষতি করবেন না। নিচের জরুরি বোতামটিতে চাপ দিয়ে অথবা সরাসরি ৯৯৯ নম্বরে কল করুন। "
+                    "আমরা আপনার পাশে আছি।"
+                )
+                safety_flags = ["crisis_detected", "urgent_intervention_needed"]
             # Save user message & assistant safety reply
             user_msg = memory_manager.save_message(db, active_session_id, user_id, "user", message)
             asst_msg = memory_manager.save_message(db, active_session_id, user_id, "assistant", reply_text)
@@ -76,7 +81,7 @@ class ConversationManager:
                 response=reply_text,
                 context_used={"recent_history": False, "patient_memory": False, "conversation_summary": False, "medical_knowledge": False},
                 sources=[],
-                safety_flags=["crisis_detected", "urgent_intervention_needed"],
+                safety_flags=safety_flags,
                 latency_ms=elapsed
             )
 

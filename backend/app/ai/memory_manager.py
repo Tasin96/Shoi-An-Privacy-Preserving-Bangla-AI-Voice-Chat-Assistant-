@@ -173,6 +173,27 @@ class MemoryManager:
         extracted = []
         text_lower = user_text.lower()
 
+        # 0. Covert Vernacular Cycle Metaphors (Shared Phone Private Voice)
+        from app.services.cycle_engine import decode_covert_cycle_metaphor
+        covert = decode_covert_cycle_metaphor(user_text)
+        if covert:
+            if covert["event_type"] == "cycle_start":
+                mem = self.add_or_update_memory(
+                    db=db, user_id=user_id,
+                    category="menstrual", key="cycle_status",
+                    value="Active cycle started (reported via covert metaphor)",
+                    source_type="patient_reported", source_ref=message_id
+                )
+                extracted.append(mem)
+            elif covert["event_type"] == "cramps":
+                mem = self.add_or_update_memory(
+                    db=db, user_id=user_id,
+                    category="physical_symptom", key="period_pain",
+                    value="Patient-reported lower abdominal cramps/twisting",
+                    source_type="patient_reported", source_ref=message_id
+                )
+                extracted.append(mem)
+
         # 1. Cycle length intervals (e.g. "sometimes 40 days, sometimes 55 days", "40-55 days", "45 days")
         cycle_len_match = re.search(r"(\d{2})\s*(?:to|-|থেকে|থেকে\s*বা\s*কখনো)?\s*(\d{2})?\s*(?:days|দিন)", text_lower)
         if cycle_len_match:

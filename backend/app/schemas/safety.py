@@ -14,6 +14,8 @@ class EmergencyPayload(BaseModel):
         "আপনার বিশ্বস্ত কোনো মানুষের সাথে কথা বলুন।",
         "প্রয়োজনে সরাসরি ৯৯৯ বা নিকটস্থ স্বাস্থ্যকর্মীর সহায়তা নিন।"
     ]
+    covert_mode: bool = False
+    bystander_safe_audio_bn: Optional[str] = None
 
 class SafetyCheckRequest(BaseModel):
     text: str
@@ -23,3 +25,5 @@ class SafetyCheckResponse(BaseModel):
     reason: Optional[str] = None
     action_required: bool = False
     emergency_payload: Optional[EmergencyPayload] = None
+    is_veiled_crisis: bool = False
+    covert_alert: bool = False

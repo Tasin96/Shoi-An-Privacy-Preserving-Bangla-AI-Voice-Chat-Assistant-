@@ -8,11 +8,11 @@ CLINICAL_KEYWORDS = [
     "রক্তক্ষরণ", "রক্তস্রাব", "মাসিক", "পিরিয়ড", "পিরিয়ডে", "মেনস্ট্রু", "ঋতুস্রাব",
     "গর্ভ", "গর্ভবতী", "প্রেগন্যান্ট", "প্রেগনেন্সি", "প্রসব", "ওভুলেশন", "গর্ভপাত",
     "পিসিওএস", "pcos", "pcod", "ওষুধ", "ঔষধ", "বড়ি", "ট্যাবলেট", "ডোজ", "ইনজেকশন",
-    "সংক্রমণ", "স্রাব", "সাদাস্রাব", "যোনি", "চুলকানি", "জ্বালাপোড়া", "খিঁচুনি", "লোম", "হরমোন",
+    "সংক্রমণ", "স্রাব", "সাদাস্রাব", "যোনি", "চুলকানি", "জ্বালাপোড়া", "খিঁচুনি", "হরমোন",
     "স্তন", "ব্রেস্ট", "নিপল", "টিউমার", "ক্যান্সার", "অপারেশন",
-    "ডায়াবেটিস", "প্রেসার", "বিপি", "রক্তচাপ", "ব্যথা", "ব্যাথা", "চাবায়", "কামড়ায়",
-    "তলপেট", "পেটব্যথা", "প্রস্রাব", "ইউরিন", "ইউটিআই", "uti", "বমি", "রক্তস্বল্পতা", "অ্যানিমিয়া",
-    "থাইরয়েড", "থাইরয়েড", "ওজন", "ব্রণ", "ইনফার্টিলিটি", "বন্ধ্যাত্ব", "গাইনি", "ডাক্তার"
+    "ডায়াবেটিস", "রক্তচাপ", "তলপেট", "তলপেটে", "পেটব্যথা", "পেট ব্যথা",
+    "প্রস্রাব", "ইউরিন", "ইউটিআই", "uti", "রক্তস্বল্পতা", "অ্যানিমিয়া",
+    "থাইরয়েড", "থাইরয়েড", "ইনফার্টিলিটি", "বন্ধ্যাত্ব", "গাইনি", "ডাক্তার"
 ]
 
 def is_medical_query(text: str) -> bool:
@@ -1058,22 +1058,6 @@ def get_chitchat_response(message: str) -> Optional[Tuple[str, float]]:
     if is_medical_query(message):
         return None
 
-    # Apply conversational dialect and phonetic normalization
-    clean_msg = normalize_conversational_text(message)
-    # Strip common punctuation
-    clean_msg = re.sub(r"[?!.,।\-_~]", " ", clean_msg).strip()
-
-    # Step 1: Match against comprehensive everyday natural intents
-    for pattern, responses in CONVERSATIONAL_INTENTS:
-        if re.search(pattern, clean_msg, re.IGNORECASE):
-            reply = random.choice(responses)
-            return reply, 0.95
-
-    # Step 2: If no everyday intent matched, defer explicit clinical queries to RAG
-    if is_medical_query(message):
-        return None
-
-    return None
     # Apply conversational dialect and phonetic normalization
     clean_msg = normalize_conversational_text(message)
     # Strip common punctuation
