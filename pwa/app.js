@@ -970,6 +970,16 @@ function setupPeriodTracker() {
   const startDateInput = document.getElementById('periodStartDate');
   const endDateInput = document.getElementById('periodEndDate');
 
+  const startVoiceBtn = document.getElementById('startPeriodVoiceTrackingBtn');
+  if (startVoiceBtn) {
+    startVoiceBtn.addEventListener('click', () => {
+      primeAudioPlayback();
+      showScreen('voice');
+      setVoiceState('thinking');
+      sendVoiceQuery('আমার পিরিয়ডের তথ্য রেকর্ড করতে চাই');
+    });
+  }
+
   // Pre-fill today's date and enforce boundary
   const today = new Date().toISOString().split('T')[0];
   if (startDateInput) {
