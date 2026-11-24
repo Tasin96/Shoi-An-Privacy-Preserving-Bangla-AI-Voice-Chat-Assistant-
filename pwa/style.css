@@ -375,9 +375,7 @@ body {
 }
 
 .citations-container {
-  margin-top: 10px;
-  font-size: 12px;
-  color: var(--text-muted);
+  display: none !important;
 }
 
 /* Quick Questions Chips */

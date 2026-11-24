@@ -417,13 +417,6 @@ function setupSpeechAndAudioPipeline() {
         badgesDiv.appendChild(memBadge);
       }
 
-      if (citations && citations.length > 0) {
-        const citBadge = document.createElement('span');
-        citBadge.className = 'chat-badge citation';
-        citBadge.textContent = `📚 ${citations[0].split('(')[0]}`;
-        badgesDiv.appendChild(citBadge);
-      }
-
       // 1-tap Listen button to hear the full answer aloud
       const speakBtn = document.createElement('button');
       speakBtn.className = 'chat-badge listen-btn';
@@ -846,11 +839,10 @@ function displayVoiceResponse(data) {
     }
   }
 
-  // Citations
-  if (data.citations && data.citations.length > 0) {
-    citationsContainer.innerHTML = '<strong>তথ্যসূত্র:</strong> ' + data.citations.join(', ');
-  } else {
+  // Citations (hidden per UI requirements)
+  if (citationsContainer) {
     citationsContainer.innerHTML = '';
+    citationsContainer.style.display = 'none';
   }
 
   // Safety trigger

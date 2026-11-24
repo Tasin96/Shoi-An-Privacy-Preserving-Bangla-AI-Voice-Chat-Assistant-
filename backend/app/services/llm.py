@@ -155,6 +155,10 @@ class LLMService:
                     emergency_payload=None
                 )
 
+        if reply_text:
+            reply_text = re.sub(r'\s*\([^\)]*সূত্র:[^\)]*\)', '', reply_text).strip()
+            reply_text = re.sub(r'\s*\([^\)]*Source:[^\)]*\)', '', reply_text).strip()
+
         return ChatResponse(
             reply=reply_text,
             citations=citations,
@@ -249,17 +253,17 @@ class LLMService:
             clean_ans = re.sub(r"^.*?উত্তর:\s*", "", clean_ans, flags=re.DOTALL)
         clean_ans = re.sub(r"^প্রশ্ন:[^\n]+\n*", "", clean_ans).strip()
         clean_ans = re.sub(r"^Regarding\s+['\"][^'\"]+['\"]:\s*", "", clean_ans).strip()
+        clean_ans = re.sub(r'\s*\([^\)]*সূত্র:[^\)]*\)', '', clean_ans).strip()
+        clean_ans = re.sub(r'\s*\([^\)]*Source:[^\)]*\)', '', clean_ans).strip()
 
         if self._is_english(message):
-            closing = f"\n\n(Source: {top_chunk.get('source', 'DGHS / WHO')})"
-            return f"{clean_ans}{closing}"
+            return clean_ans
 
         greeting = "আপু, "
         if clean_ans.startswith("আপু"):
             body = clean_ans
         else:
             body = f"{greeting}{clean_ans}"
-        closing = f"\n\n(সূত্র: {top_chunk.get('source', 'DGHS / WHO')})"
-        return f"{body}{closing}"
+        return body
 
 llm_service = LLMService()
