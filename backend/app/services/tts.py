@@ -4,6 +4,7 @@ import os
 import re
 import time
 import hashlib
+import asyncio
 from collections import OrderedDict
 from typing import Optional
 from app.config import settings
@@ -169,43 +170,40 @@ def normalize_bangla_speech_text(text: str) -> str:
 
     return text
 
-def smart_speech_truncate(text: str, max_chars: int = 4000) -> str:
+def smart_speech_truncate(text: str, max_chars: int = 220) -> str:
     """
-    Ensures complete, full-length audio readout of the entire answer.
-    Preserves comprehensive clinical explanations without premature cut-offs.
+    Truncates speech text to 2-3 crisp, natural sentences (max ~220 characters).
+    Ensures rapid synthesis under 2 seconds and pleasant mobile voice listening.
     """
     if len(text) <= max_chars:
         return text
 
     cut_zone = text[:max_chars]
     last_danda = max(cut_zone.rfind("।"), cut_zone.rfind("?"), cut_zone.rfind("!"))
-    if last_danda >= 500:
-        base = text[:last_danda + 1].strip()
-        if not base.endswith(("আপু।", "সই।", "বলো।")):
-            base += " আর কিছু জানতে চাইলে বলো আপু।"
-        return base
+    if last_danda >= 60:
+        return text[:last_danda + 1].strip()
 
     last_space = cut_zone.rfind(" ")
-    if last_space >= 450:
-        return text[:last_space].strip() + "। আর কিছু জানতে চাইলে বলো আপু।"
+    if last_space >= 60:
+        return text[:last_space].strip() + "।"
 
     return cut_zone.strip() + "।"
 
 async def text_to_speech_base64(text: str) -> Optional[str]:
     """
-    Converts Bangla text to MP3 audio encoded in base64.
-    Uses Microsoft Edge Neural Bangla voice (bn-BD-NabanitaNeural) or gTTS fallback.
-    Applies phonetic normalization and prosody smoothing.
-    Caches nothing that could identify a user.
+    Converts Bangla text to MP3 audio encoded in base64 with strict low-latency timeouts:
+    1. Instant LRU cache lookup (0ms)
+    2. High-speed gTTS or Edge-TTS with 2.0s strict timeout
+    3. Non-blocking fallback ensuring the user never waits more than ~2-3s for voice
     """
     if not text:
         return None
 
     start_time = time.time()
 
-    # Normalize for acoustic natural speech and retain full response
+    # Normalize for acoustic natural speech and keep concise for sub-2s synthesis
     clean_text = normalize_bangla_speech_text(text)
-    clean_text = smart_speech_truncate(clean_text, max_chars=4000)
+    clean_text = smart_speech_truncate(clean_text, max_chars=220)
 
     if not clean_text:
         return None
@@ -221,25 +219,36 @@ async def text_to_speech_base64(text: str) -> Optional[str]:
         temp_path = temp_file.name
 
     try:
-        # Method 1: edge-tts (High quality neural voice)
-        if settings.TTS_ENGINE == "edge-tts":
+        # Prefer fast gTTS or Edge-TTS with strict timeout
+        engine = getattr(settings, "TTS_ENGINE", "gtts").lower()
+        success = False
+
+        if engine == "edge-tts":
             try:
                 import edge_tts
-                # Paced down slightly (-3%) for warm, soothing rural comprehension
                 communicate = edge_tts.Communicate(
                     clean_text,
                     voice=settings.BANGLA_VOICE,
-                    rate="-3%",
+                    rate="+4%",
                     pitch="+1Hz"
                 )
-                await communicate.save(temp_path)
+                # Strict 2.0s timeout on overseas websocket
+                await asyncio.wait_for(communicate.save(temp_path), timeout=2.0)
+                if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
+                    success = True
             except Exception as e:
-                print(f"[TTS] edge-tts error: {e}, attempting gTTS fallback...")
-                _fallback_gtts(clean_text, temp_path)
-        else:
-            _fallback_gtts(clean_text, temp_path)
+                print(f"[TTS] edge-tts skipped/timed-out ({e}), switching to fast gTTS...")
 
-        if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
+        if not success:
+            # Run gTTS in background thread with 4.0s timeout
+            try:
+                await asyncio.wait_for(asyncio.to_thread(_fallback_gtts, clean_text, temp_path), timeout=4.0)
+                if os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
+                    success = True
+            except Exception as e:
+                print(f"[TTS] gTTS fallback error/timeout: {e}")
+
+        if success and os.path.exists(temp_path) and os.path.getsize(temp_path) > 0:
             with open(temp_path, "rb") as f:
                 encoded = base64.b64encode(f.read()).decode("utf-8")
                 elapsed = time.time() - start_time

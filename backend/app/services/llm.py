@@ -13,6 +13,16 @@ SYSTEM_PROMPT_PATH = os.path.join(
     os.path.dirname(__file__), "..", "..", "prompts", "system_bn.md"
 )
 
+# Reusable connection-pooled HTTP client for low-latency API calls
+_HTTPX_CLIENT: Optional[httpx.AsyncClient] = None
+
+def get_httpx_client() -> httpx.AsyncClient:
+    global _HTTPX_CLIENT
+    if _HTTPX_CLIENT is None or _HTTPX_CLIENT.is_closed:
+        limits = httpx.Limits(max_keepalive_connections=15, max_connections=30)
+        _HTTPX_CLIENT = httpx.AsyncClient(limits=limits, timeout=12.0)
+    return _HTTPX_CLIENT
+
 def get_system_prompt() -> str:
     if os.path.exists(SYSTEM_PROMPT_PATH):
         try:
@@ -205,7 +215,7 @@ class LLMService:
         return eng_chars > 3 and eng_chars > bn_chars
 
     async def _call_gemini(self, message: str, context: str, history: Optional[List[ChatMessage]]) -> Optional[str]:
-        model = getattr(settings, "GEMINI_MODEL", None) or getattr(settings, "LLM_MODEL", "gemini-3.1-flash-lite")
+        model = getattr(settings, "GEMINI_MODEL", None) or getattr(settings, "LLM_MODEL", "gemini-flash-lite-latest")
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={settings.GEMINI_API_KEY}"
         
         sys_instruction = (
@@ -215,7 +225,8 @@ class LLMService:
             f"1. You are Shoi (সই), a warm, compassionate, sisterly reproductive health AI assistant for women in Bangladesh.\n"
             f"2. Never repeat or echo the user's question; deliver direct, friendly, and practical advice.\n"
             f"3. Never pretend to be a licensed medical doctor or prescribe prescription drugs. Recommend consulting a qualified gynecologist when appropriate.\n"
-            f"4. Language: Always respond in natural, sympathetic Bengali (or English if user queries in English)."
+            f"4. Language: Always respond in natural, sympathetic Bengali (or English if user queries in English).\n"
+            f"5. Speed & Brevity: Keep your answer warm and direct in 2-3 short, spoken sentences (maximum 35-45 words) so that mobile voice users hear their answer fast without long listening delays."
         )
         
         contents = []
@@ -228,31 +239,31 @@ class LLMService:
         payload = {
             "system_instruction": {"parts": [{"text": sys_instruction}]},
             "contents": contents,
-            "generationConfig": {"temperature": 0.35, "maxOutputTokens": 450}
+            "generationConfig": {"temperature": 0.3, "maxOutputTokens": 180}
         }
         
-        timeout_val = getattr(settings, "LLM_TIMEOUT_SECONDS", 30.0)
+        timeout_val = getattr(settings, "LLM_TIMEOUT_SECONDS", 10.0)
+        client = get_httpx_client()
         # Attempt with 1 retry for transient spikes (503/429)
         for attempt in range(2):
             try:
-                async with httpx.AsyncClient(timeout=timeout_val) as client:
-                    resp = await client.post(url, json=payload)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                        clean_text = re.sub(r'^(?:প্রশ্ন|উত্তর|Regarding|Question|Answer)[:\-–\s]+', '', text, flags=re.IGNORECASE).strip()
-                        return clean_text
-                    elif resp.status_code in [503, 429] and attempt == 0:
-                        import asyncio
-                        await asyncio.sleep(1.0)
-                        continue
-                    else:
-                        print(f"Gemini API returned status {resp.status_code}: {resp.text}")
+                resp = await client.post(url, json=payload, timeout=timeout_val)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    clean_text = re.sub(r'^(?:প্রশ্ন|উত্তর|Regarding|Question|Answer)[:\-–\s]+', '', text, flags=re.IGNORECASE).strip()
+                    return clean_text
+                elif resp.status_code in [503, 429] and attempt == 0:
+                    import asyncio
+                    await asyncio.sleep(0.6)
+                    continue
+                else:
+                    print(f"Gemini API returned status {resp.status_code}: {resp.text}")
             except Exception as e:
                 print(f"Gemini attempt {attempt + 1} exception: {e}")
                 if attempt == 0:
                     import asyncio
-                    await asyncio.sleep(0.8)
+                    await asyncio.sleep(0.5)
                     continue
         return None
 

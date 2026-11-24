@@ -2,37 +2,22 @@
 """
 Bangla Mental Health Crisis Detection & Multi-Layer Safety Engine:
 Operates 4 standardized operational risk levels:
-- LEVEL 0: No Detected Crisis (Normal health/wellness inquiry)
-- LEVEL 1: Mild Emotional Distress (Sadness, loneliness, emotional weariness, routine stress)
-- LEVEL 2: Significant Distress (Veiled ideation, burdensomeness, desire to vanish -> gentle direct clarification)
-- LEVEL 3: Possible Immediate Danger (Explicit self-harm intent, agricultural poisons, domestic violence danger -> covert emergency mode & 109 hotline)
+- LEVEL 0: No Detected Crisis (Normal conversation)
+- LEVEL 1: Mild Emotional Distress (Sadness, loneliness, emotional fatigue)
+- LEVEL 2: Significant Distress (Veiled ideation, burdensomeness, desire to vanish -> direct gentle clarification)
+- LEVEL 3: Possible Immediate Danger (Explicit self-harm intent, agricultural poisons, domestic violence danger)
 """
 
 import re
 import os
 import json
-import unicodedata
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from app.schemas.crisis import CrisisAssessResponse
 from app.services.crisis_detector import (
     get_keywords, get_veiled_keywords, BYSTANDER_SAFE_AUDIO_BN,
     DIRECT_SUICIDE_STEMS, BANGLISH_STEMS
 )
-
-def deep_clean_bn(text: str) -> str:
-    """
-    Normalizes Bengali characters and handles dual representation of nukta chars.
-    """
-    if not text:
-        return ""
-    text = unicodedata.normalize("NFKC", text.lower().strip())
-    # Standardize য় / য়
-    text = text.replace("\u09af\u09bc", "য়").replace("য়", "য়")
-    # Standardize ড় / ড়
-    text = text.replace("\u09a1\u09bc", "ড়").replace("ড়", "ড়")
-    # Standardize ঢ় / ঢ়
-    text = text.replace("\u09a2\u09bc", "ঢ়").replace("ঢ়", "ঢ়")
-    return text
+from app.services.rag import normalize_bangla_text
 
 HYPOTHETICAL_EDUCATIONAL_PATTERNS = [
     r"আত্মহত্যা\s*(?:প্রতিরোধ|সচেতনতা|দিবস|নিবন্ধ|গবেষণা|হার|পরিসংখ্যান|কারণ)",
@@ -47,99 +32,33 @@ NEGATION_PATTERNS = [
     r"মরে\s*যেতে\s*চাই\s*না",
     r"বেঁচে\s*থাকতে\s*চাই",
     r"বাঁচতে\s*চাই",
-    r"বাচতে\s*চাই",
     r"আত্মহত্যা\s*করব\s*না",
     r"ক্ষতি\s*করব\s*না",
     r"নিজের\s*ক্ষতি\s*করতে\s*চাই\s*না"
 ]
 
-LEVEL_3_LETHAL_PATTERNS = [
-    r"ফসলের\s*বিষ",
-    r"ঘাসের\s*(?:ওষুধ|বিষ)",
-    r"কীটনাশক",
-    r"পোকার\s*(?:ওষুধ|বিষ)",
-    r"ধানের\s*পোকার\s*বিষ",
-    r"নদী(?:র\s*জলে|\s*তে)?\s*(?:গা\s*ভাসা|ঝাঁপ|ডুবে)",
-    r"পুকুরে\s*ঝাঁপ",
-    r"গলায়\s*দড়ি",
-    r"ফাঁস\s*(?:দে|লাগা|নে)",
-    r"ছাদ\s*থেকে\s*লাফ",
-    r"বিষ\s*(?:খে|খা|পান)",
-    r"আত্মহত্যা",
-    r"মরে\s*(?:যাব|যেতে\s*চাই|যেতে|গেলে\s*বাঁচতাম)",
-    r"মরতে\s*চাই",
-    r"জীবন\s*(?:শেষ\s*করে|রাখব\s*না|রাখতে\s*চাই\s*না)",
-    r"নিজের\s*ক্ষতি\s*কর"
-]
-
-LEVEL_2_VEILED_PATTERNS = [
-    # Burdensomeness & erasure
-    r"(?:আমি\s*)?না\s*থাকলে(?:ই)?\s*(?:সবার|সবাই)",
-    r"সংসারের\s*বোঝা",
-    r"সবার\s*বোঝা",
-    r"বোঝা\s*হয়ে",
-    r"আমাকে\s*ছাড়া\s*সবাই",
-    r"কাউকে\s*(?:আর\s*)?জ্বালাব\s*না",
-    r"আমার\s*বেঁচে\s*থাকা\s*সবার",
-    
-    # Desire to vanish or escape forever
-    r"(?:চিরতরে|দূরে|কোথাও)\s*হারিয়ে\s*যেতে",
-    r"হারিয়ে\s*যেতে\s*ইচ্ছা",
-    r"সবকিছু\s*থেকে\s*দূরে\s*চলে\s*যেতে",
-    r"দূরে\s*চলে\s*যেতে\s*ইচ্ছা",
-    
-    # Passive death wishes & resignation
-    r"আল্লাহ\s*(?:যেন\s*)?(?:আমাকে\s*)?(?:তুলে|উঠায়)\s*নাও",
-    r"ঘুমিয়ে\s*থাকলে\s*(?:আর|যদি|.*অনুভব\s*করতে\s*হতো\s*না)",
-    r"ঘুমাইয়া\s*যদি\s*আর\s*না\s*উঠতাম",
-    r"আর\s*চোখ\s*খুলতে\s*ইচ্ছা\s*করে\s*না",
-    r"আমার\s*(?:কি\s*)?মরণ\s*নাই",
-    r"এই\s*জীবনের\s*চেয়ে\s*মরণ\s*ভালো",
-    r"বেঁচে\s*থাকার\s*চেয়ে\s*মরণ\s*ভালো",
-    r"সবকিছু\s*শেষ\s*হয়ে\s*গেলে\s*(?:ভালো\s*হতো|শান্তি)",
-    r"বেঁচে\s*থাকার\s*.*(?:মানে|অর্থ|দরকার|প্রয়োজন)\s*নেই",
-    r"বেঁচে\s*থাকার\s*(?:কোনো\s*)?ইচ্ছা\s*নেই",
-    r"পরানডা\s*আর\s*সয়\s*না",
-    r"মুক্তি\s*পেলে\s*বাঁচতাম",
-    
-    # Hopeless entrapment & abuse
-    r"চারিদিকে\s*অন্ধকার",
-    r"ঘর\s*অন্ধকার\s*লাগে",
-    r"সব\s*পথ\s*বন্ধ",
-    r"কোনো\s*পথ\s*(?:খোলা\s*)?নেই",
-    r"বাপের\s*বাড়ি\s*গিয়ে\s*আর\s*মুখ\s*দেখাব\s*না",
-    r"দম\s*বন্ধ\s*হয়ে\s*(?:আসে|আসতেছে)",
-    r"আর\s*সহ্য\s*হয়\s*না",
-    r"অত্যাচারের\s*চেয়ে\s*মরে\s*যাওয়া\s*ভালো",
-    r"মারধোর\s*আর\s*সইতে\s*পারি\s*না",
-    r"এই\s*নরক\s*থেকে\s*মুক্তি"
-]
-
-LEVEL_1_MILD_PATTERNS = [
-    r"মন\s*(?:খুব\s*)?খারাপ",
-    r"মনডা\s*ভালো\s*না",
-    r"কষ্ট\s*লাগছে",
-    r"একাকী\s*লাগে",
-    r"একা\s*একা\s*লাগে",
-    r"ক্লান্ত\s*লাগছে",
-    r"ভালো\s*লাগছে\s*না",
-    r"হতাশ",
-    r"টেনশন\s*হচ্ছে",
-    r"অস্থির\s*লাগছে",
-    r"শান্তি\s*নেই",
-    r"খুব\s*একা",
-    r"কান্না\s*পাচ্ছে",
-    r"মনটা\s*ভার",
-    r"আর\s*কতদিন\s*এভাবে\s*চলবে",
-    r"সবকিছু\s*অসহ্য\s*লাগছে",
-    r"আমি\s*আর\s*পারছি\s*না",
-    r"আমার\s*আর\s*কিছু\s*ভালো\s*লাগে\s*না"
+MILD_DISTRESS_STEMS = [
+    "মন খারাপ", "মনডা ভালো না", "কষ্ট লাগছে", "একাকী লাগে", "একা একা লাগে",
+    "ক্লান্ত লাগছে", "ভালো লাগছে না", "হতাশ লাগছে", "টেনশন হচ্ছে", "অস্থির লাগছে",
+    "শান্তি নেই", "খুব একা", "কান্না পাচ্ছে", "মনটা ভার"
 ]
 
 LEVEL_2_CLARIFICATION_PROMPT_BN = (
     "তোমার কথায় মনে হচ্ছে তুমি অনেক কষ্টের মধ্যে আছো। আমি তোমার কথা মন দিয়ে শুনছি। "
     "একটা বিষয় জানতে চাই—তুমি কি শুধু সবকিছু থেকে একটু দূরে থাকতে চাইছ, নাকি নিজের ক্ষতি করার কথাও মনে হচ্ছে?"
 )
+
+def is_hypothetical_or_educational(norm_text: str) -> bool:
+    for pat in HYPOTHETICAL_EDUCATIONAL_PATTERNS:
+        if re.search(pat, norm_text):
+            return True
+    return False
+
+def has_explicit_negation(norm_text: str) -> bool:
+    for pat in NEGATION_PATTERNS:
+        if re.search(pat, norm_text):
+            return True
+    return False
 
 def assess_crisis_risk(
     text: str,
@@ -161,43 +80,46 @@ def assess_crisis_risk(
             action_required=False
         )
 
-    norm_text = deep_clean_bn(text)
+    norm_text = normalize_bangla_text(text.lower().strip())
+    veiled_data = get_veiled_keywords() or {}
+    keywords_data = get_keywords() or {}
     detected_signals: List[str] = []
 
-    # Layer 3: Hypothetical/Educational Discussion Check
-    for pat in HYPOTHETICAL_EDUCATIONAL_PATTERNS:
-        if re.search(pat, norm_text):
-            return CrisisAssessResponse(
-                risk_level="LEVEL_0",
-                level_numeric=0,
-                confidence=0.95,
-                detected_signal_categories=["educational_or_hypothetical_context"],
-                is_hypothetical=True,
-                action_required=False
-            )
+    # Check for hypothetical/educational discussions or explicit negations
+    if is_hypothetical_or_educational(norm_text):
+        return CrisisAssessResponse(
+            risk_level="LEVEL_0",
+            level_numeric=0,
+            confidence=0.92,
+            detected_signal_categories=["educational_or_hypothetical_context"],
+            is_hypothetical=True,
+            action_required=False
+        )
 
-    # Layer 3: Explicit Negation Check (e.g. "মরতে চাই না কিন্তু খুব কষ্টে আছি")
-    for pat in NEGATION_PATTERNS:
-        if re.search(pat, norm_text):
-            return CrisisAssessResponse(
-                risk_level="LEVEL_1",
-                level_numeric=1,
-                confidence=0.90,
-                detected_signal_categories=["distress_with_explicit_affirmation_of_life"],
-                action_required=False,
-                safety_response_bn="আপু, আপনার কষ্ট আমরা বুঝতে পারছি। আপনি একা নন। একটু বুক ভরে শ্বাস নিন, আমরা সবসময় আপনার পাশে আছি।"
-            )
+    if has_explicit_negation(norm_text):
+        return CrisisAssessResponse(
+            risk_level="LEVEL_1",
+            level_numeric=1,
+            confidence=0.88,
+            detected_signal_categories=["distress_with_explicit_affirmation_of_life"],
+            action_required=False,
+            safety_response_bn="আপু, আপনার কষ্ট আমরা বুঝতে পারছি। আপনি একা নন। একটু বুক ভরে শ্বাস নিন, আমরা আপনার পাশে আছি।"
+        )
 
     # =========================================================================
-    # LEVEL 3: IMMEDIATE DANGER (Lethal Means & Explicit Crisis)
+    # LEVEL 3: POSSIBLE IMMEDIATE DANGER (Lethal Means & Explicit Suicide Stems)
     # =========================================================================
-    for pat in LEVEL_3_LETHAL_PATTERNS:
-        if re.search(pat, norm_text):
-            detected_signals.append("rural_lethal_means_or_imminent_crisis")
+    # 3.1 Rural Agricultural Lethal Means (pesticides, agricultural poison)
+    lethal_means = veiled_data.get("rural_lethal_means_access", [
+        "ফসলের বিষ", "ঘাসের ওষুধ", "কীটনাশক", "কীটনাশকের বোতল", "পোকার ওষুধ", "নদীর জলে গা ভাসায় দেব"
+    ])
+    for lm in lethal_means:
+        if lm in norm_text:
+            detected_signals.append("rural_lethal_means_access")
             return CrisisAssessResponse(
                 risk_level="LEVEL_3",
                 level_numeric=3,
-                confidence=0.99,
+                confidence=0.98,
                 detected_signal_categories=detected_signals,
                 is_veiled=True,
                 covert_alert=True,
@@ -207,8 +129,27 @@ def assess_crisis_risk(
                 bystander_safe_audio_bn=BYSTANDER_SAFE_AUDIO_BN
             )
 
-    # Banglish crisis indicators
-    for b_stem in BANGLISH_STEMS:
+    # 3.2 Explicit Suicide Stems & Intent
+    all_direct = DIRECT_SUICIDE_STEMS + keywords_data.get("direct_suicide_bn", [])
+    for stem in all_direct:
+        if stem in norm_text:
+            detected_signals.append("explicit_suicide_intent")
+            return CrisisAssessResponse(
+                risk_level="LEVEL_3",
+                level_numeric=3,
+                confidence=0.99,
+                detected_signal_categories=detected_signals,
+                is_veiled=False,
+                covert_alert=False,
+                action_required=True,
+                safety_response_bn="আপু, আপনার জীবন অত্যন্ত মূল্যবান। আপনি একা নন। দয়া করে নিজের ক্ষতি করবেন না। এখনই ৯৯৯ বা ১০৯ এ বিনামূল্যে কল করুন।",
+                emergency_helpline="999",
+                bystander_safe_audio_bn=BYSTANDER_SAFE_AUDIO_BN
+            )
+
+    # 3.3 Banglish Suicide Stems
+    all_banglish = BANGLISH_STEMS + keywords_data.get("banglish", [])
+    for b_stem in all_banglish:
         if b_stem in norm_text:
             detected_signals.append("banglish_crisis_indication")
             return CrisisAssessResponse(
@@ -217,18 +158,38 @@ def assess_crisis_risk(
                 confidence=0.95,
                 detected_signal_categories=detected_signals,
                 action_required=True,
-                emergency_helpline="109",
+                emergency_helpline="999",
                 bystander_safe_audio_bn=BYSTANDER_SAFE_AUDIO_BN
             )
 
     # =========================================================================
-    # LEVEL 2: SIGNIFICANT DISTRESS (Veiled ideation, burdensomeness, desire to vanish)
+    # LEVEL 2: SIGNIFICANT DISTRESS (Veiled suicidal resignation, burdensomeness, domestic entrapment)
     # =========================================================================
-    for pat in LEVEL_2_VEILED_PATTERNS:
-        if re.search(pat, norm_text):
-            detected_signals.append("veiled_ideation_and_burdensomeness")
+    # 2.1 Passive Resignation & Death Wishes
+    passive_death = veiled_data.get("passive_resignation_death_wishes", [
+        "আল্লাহ যেন আমাকে তুলে নেয়", "ঘুমাইয়া যদি আর না উঠতাম", "আমার কি মরণ নাই", "এই জীবনের চেয়ে মরণ ভালো ছিল"
+    ])
+    for p in passive_death:
+        if p in norm_text:
+            detected_signals.append("passive_resignation_death_wishes")
 
-    # Multi-turn escalation check
+    # 2.2 Burdensomeness and Erasure Metaphors
+    burdensome = veiled_data.get("burdensomeness_and_erasure", [
+        "আমি না থাকলেই সবার ভালো", "সংসারের বোঝা হয়ে আছি", "কোথাও হারিয়ে যেতে চাই চিরতরে", "হারিয়ে যেতে ইচ্ছা করে"
+    ])
+    for b in burdensome:
+        if b in norm_text:
+            detected_signals.append("burdensomeness_and_erasure")
+
+    # 2.3 Hopeless Entrapment and Domestic Abuse
+    entrapment = veiled_data.get("hopeless_entrapment_and_abuse", [
+        "চারিদিকে অন্ধকার লাগে কোনো পথ নাই", "বাপের বাড়ি গিয়ে আর মুখ দেখাব না", "দম বন্ধ হয়ে আসতেছে আর পারি না"
+    ])
+    for e in entrapment:
+        if e in norm_text:
+            detected_signals.append("hopeless_entrapment_and_abuse")
+
+    # Contextual multi-turn escalation check
     if conversation_history:
         past_distress_count = sum(
             1 for turn in conversation_history[-3:]
@@ -241,7 +202,7 @@ def assess_crisis_risk(
         return CrisisAssessResponse(
             risk_level="LEVEL_2",
             level_numeric=2,
-            confidence=0.92,
+            confidence=0.90,
             detected_signal_categories=detected_signals,
             is_veiled=True,
             covert_alert=True,
@@ -253,22 +214,22 @@ def assess_crisis_risk(
         )
 
     # =========================================================================
-    # LEVEL 1: MILD EMOTIONAL DISTRESS (Loneliness, everyday fatigue, sad mood)
+    # LEVEL 1: MILD EMOTIONAL DISTRESS (Loneliness, stress, everyday fatigue)
     # =========================================================================
-    for pat in LEVEL_1_MILD_PATTERNS:
-        if re.search(pat, norm_text):
+    for mild in MILD_DISTRESS_STEMS:
+        if mild in norm_text:
             detected_signals.append("mild_emotional_distress")
             return CrisisAssessResponse(
                 risk_level="LEVEL_1",
                 level_numeric=1,
-                confidence=0.88,
+                confidence=0.85,
                 detected_signal_categories=detected_signals,
                 action_required=False,
                 safety_response_bn="আপু, আপনার মন খারাপের কথা শুনে খারাপ লাগছে। আপনি কি আমাকে খুলে বলবেন কী নিয়ে চিন্তা হচ্ছে? আমি আপনার কথা শুনছি।"
             )
 
     # =========================================================================
-    # LEVEL 0: NO DETECTED CRISIS (Routine health inquiry)
+    # LEVEL 0: NO DETECTED CRISIS (Normal conversation, health questions)
     # =========================================================================
     return CrisisAssessResponse(
         risk_level="LEVEL_0",
@@ -286,3 +247,5 @@ class CrisisClassifierEngine:
         return resp
 
 crisis_classifier_engine = CrisisClassifierEngine()
+
+
