@@ -35,3 +35,7 @@ class User(Base):
     health_assessments = relationship("HealthAssessment", back_populates="user", cascade="all, delete-orphan")
     conversations = relationship("ConversationSession", back_populates="user", cascade="all, delete-orphan")
     patient_memories = relationship("PatientMemory", back_populates="user", cascade="all, delete-orphan")
+    private_voice_sessions = relationship("PrivateVoiceSession", back_populates="user", cascade="all, delete-orphan")
+    voice_interaction_records = relationship("VoiceInteractionRecord", back_populates="user", cascade="all, delete-orphan")
+    crisis_assessment_records = relationship("CrisisAssessmentRecord", back_populates="user", cascade="all, delete-orphan")
+    privacy_preferences = relationship("UserPrivacyPreference", uselist=False, back_populates="user", cascade="all, delete-orphan")

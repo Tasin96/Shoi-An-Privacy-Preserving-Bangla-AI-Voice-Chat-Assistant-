@@ -8,6 +8,9 @@ from app.models.consultation import Doctor, DoctorAvailability, Consultation
 from app.models.ml_ops import DatasetRegistry, TrainingRun, ModelVersion, ModelEvaluation, HealthAssessment, ClinicalGuideline
 from app.models.conversation import ConversationSession, ConversationMessage, ConversationSummary
 from app.models.patient_memory import PatientMemory, MemorySource, MedicalKnowledgeDocument
+from app.models.private_voice import PrivateVoiceSession, VoiceInteractionRecord
+from app.models.crisis import CrisisAssessmentRecord
+from app.models.privacy import UserPrivacyPreference
 
 __all__ = [
     "User",
@@ -36,5 +39,9 @@ __all__ = [
     "ConversationSummary",
     "PatientMemory",
     "MemorySource",
-    "MedicalKnowledgeDocument"
+    "MedicalKnowledgeDocument",
+    "PrivateVoiceSession",
+    "VoiceInteractionRecord",
+    "CrisisAssessmentRecord",
+    "UserPrivacyPreference"
 ]
