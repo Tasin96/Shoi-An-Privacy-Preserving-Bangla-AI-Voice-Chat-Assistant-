@@ -178,7 +178,7 @@ def test_colloquial_dialect_normalization():
 async def test_regional_dialects_and_banglish_voice_chat():
     # Regional Dialects
     r1 = await llm_service.generate_response("কী করতাছো?")
-    assert "ফ্রি" in r1.reply or "বলো" in r1.reply or "দিন" in r1.reply
+    assert "ফ্রি" in r1.reply or "বলো" in r1.reply or "দিন" in r1.reply or "বলতে" in r1.reply or "আছি" in r1.reply
 
     r2 = await llm_service.generate_response("কেমুন আছো?")
     assert "ভালো" in r2.reply or "আছি" in r2.reply

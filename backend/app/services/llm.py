@@ -80,17 +80,19 @@ class LLMService:
                 emergency_payload=None
             )
 
-        # Step 2: Conversational Chitchat & Everyday Bangla Talk
-        chitchat = get_chitchat_response(message)
-        if chitchat:
-            reply_text, conf = chitchat
-            return ChatResponse(
-                reply=reply_text,
-                citations=[],
-                confidence=conf,
-                risk_level="none",
-                emergency_payload=None
-            )
+        # Step 1.9: Pure Voice Backchannels (Instant sub-100ms listening acknowledgments for bare grunts)
+        norm_msg = message.strip().lower()
+        if norm_msg in ["হুম", "হু", "আচ্ছা", "হুমম", "ঠিক আছে", "ok", "okay"]:
+            chitchat = get_chitchat_response(message)
+            if chitchat:
+                reply_text, conf = chitchat
+                return ChatResponse(
+                    reply=reply_text,
+                    citations=[],
+                    confidence=conf,
+                    risk_level="none",
+                    emergency_payload=None
+                )
 
         # Multi-turn context resolution for short voice follow-ups
         effective_query = message
@@ -99,7 +101,7 @@ class LLMService:
             if last_user_msg:
                 effective_query = f"{last_user_msg} {message}"
 
-        # Step 3: RAG Retrieval for Medical/Health Context
+        # Step 2: RAG Retrieval for Medical/Health Context
         chunks, is_confident = rag_service.retrieve(effective_query, top_k=2)
         citations = [f"{c['title']} ({c['source']})" for c in chunks] if is_confident else []
         context_text = "\n\n".join([f"[{c['title']} - {c['source']}]:\n{c['text']}" for c in chunks]) if chunks else ""
@@ -107,7 +109,8 @@ class LLMService:
         has_llm_key = bool(settings.GEMINI_API_KEY or settings.OPENAI_API_KEY)
         reply_text = None
 
-        # Step 4: External LLM Generation if API Keys Available
+        # Step 3: PRIMARY ROUTE - Direct LLM Generation (Gemini 3.1 Flash-Lite, OpenAI, Ollama)
+        # LLM answers all conversational, medical, lifestyle, cooking, symptom, and wellness queries dynamically
         if has_llm_key:
             if settings.GEMINI_API_KEY:
                 try:
@@ -121,8 +124,37 @@ class LLMService:
                 except Exception as e:
                     print(f"OpenAI API call failed: {e}")
 
-        # Step 5: High-Reliability Grounded Fallback & Companion Engine
+        # Support local Ollama / OpenAI-compatible / Unified LLM if cloud unavailable
+        if not reply_text and (
+            getattr(settings, "LLM_PROVIDER", "").lower() in ["ollama", "openai_compatible"]
+            or not has_llm_key
+        ):
+            try:
+                from app.ai.llm_provider import unified_llm
+                llm_res = await unified_llm.generate_with_fallback(
+                    prompt=message,
+                    system_prompt=f"{self.system_prompt}\n\n=== Context ===\n{context_text}",
+                    history=[{"role": h.role, "content": h.content} for h in (history or [])]
+                )
+                if llm_res and llm_res.text:
+                    reply_text = llm_res.text
+            except Exception as e:
+                print(f"Unified LLM fallback failed: {e}")
+
+        # Step 4: RESILIENT FALLBACK ROUTE (ONLY when LLM is unavailable, timed out, or offline)
         if not reply_text:
+            # Check chitchat intents for everyday conversational fallback
+            chitchat = get_chitchat_response(message)
+            if chitchat:
+                reply_text, conf = chitchat
+                return ChatResponse(
+                    reply=reply_text,
+                    citations=[],
+                    confidence=conf,
+                    risk_level="none",
+                    emergency_payload=None
+                )
+
             if is_confident and chunks:
                 # Grounded medical response from verified WHO/DGHS chunks
                 reply_text = self._build_grounded_fallback_reply(message, chunks)
@@ -199,15 +231,29 @@ class LLMService:
             "generationConfig": {"temperature": 0.35, "maxOutputTokens": 450}
         }
         
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post(url, json=payload)
-            if resp.status_code == 200:
-                data = resp.json()
-                text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                clean_text = re.sub(r'^(?:প্রশ্ন|উত্তর|Regarding|Question|Answer)[:\-–\s]+', '', text, flags=re.IGNORECASE).strip()
-                return clean_text
-            else:
-                print(f"Gemini API returned status {resp.status_code}: {resp.text}")
+        timeout_val = getattr(settings, "LLM_TIMEOUT_SECONDS", 30.0)
+        # Attempt with 1 retry for transient spikes (503/429)
+        for attempt in range(2):
+            try:
+                async with httpx.AsyncClient(timeout=timeout_val) as client:
+                    resp = await client.post(url, json=payload)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                        clean_text = re.sub(r'^(?:প্রশ্ন|উত্তর|Regarding|Question|Answer)[:\-–\s]+', '', text, flags=re.IGNORECASE).strip()
+                        return clean_text
+                    elif resp.status_code in [503, 429] and attempt == 0:
+                        import asyncio
+                        await asyncio.sleep(1.0)
+                        continue
+                    else:
+                        print(f"Gemini API returned status {resp.status_code}: {resp.text}")
+            except Exception as e:
+                print(f"Gemini attempt {attempt + 1} exception: {e}")
+                if attempt == 0:
+                    import asyncio
+                    await asyncio.sleep(0.8)
+                    continue
         return None
 
     async def _call_openai(self, message: str, context: str, history: Optional[List[ChatMessage]]) -> Optional[str]:
