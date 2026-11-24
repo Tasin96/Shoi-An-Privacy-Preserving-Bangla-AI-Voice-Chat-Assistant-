@@ -97,8 +97,41 @@ function getAuthHeaders() {
   return headers;
 }
 
-// 1. Anonymous Authentication
+// 1. Authentication State & UI Sync
+function updateAuthUIState() {
+  const loggedInBox = document.getElementById('loggedInSettingsBox');
+  const loggedOutBox = document.getElementById('loggedOutSettingsBox');
+  const idDisplay = document.getElementById('anonymousUserIdDisplay');
+  const modalVal = document.getElementById('uniqueIdModalValue');
+  const logoutIdVal = document.getElementById('logoutModalUserId');
+
+  if (userId && token) {
+    if (loggedInBox) loggedInBox.style.display = 'block';
+    if (loggedOutBox) loggedOutBox.style.display = 'none';
+    if (idDisplay) idDisplay.value = userId;
+    if (modalVal) modalVal.textContent = userId;
+    if (logoutIdVal) logoutIdVal.textContent = userId;
+  } else {
+    if (loggedInBox) loggedInBox.style.display = 'none';
+    if (loggedOutBox) loggedOutBox.style.display = 'block';
+    if (idDisplay) idDisplay.value = '';
+    if (modalVal) modalVal.textContent = '';
+    if (logoutIdVal) logoutIdVal.textContent = '';
+  }
+}
+
+function showUniqueIdAlert(customTitle = null) {
+  const modal = document.getElementById('uniqueIdAlertModal');
+  const modalTitle = document.getElementById('uniqueIdModalTitle');
+  const modalVal = document.getElementById('uniqueIdModalValue');
+  if (!modal) return;
+  if (customTitle && modalTitle) modalTitle.textContent = customTitle;
+  if (modalVal && userId) modalVal.textContent = userId;
+  modal.style.display = 'flex';
+}
+
 async function ensureAnonymousAuth() {
+  let isBrandNew = false;
   if (!token || !userId) {
     try {
       const res = await fetch(`${API_BASE}/auth/anonymous`, {
@@ -112,15 +145,20 @@ async function ensureAnonymousAuth() {
         userId = data.user_id;
         localStorage.setItem('shoi_token', token);
         localStorage.setItem('shoi_user_id', userId);
+        isBrandNew = true;
       }
     } catch (e) {
       console.warn('Anonymous auth offline/error:', e);
     }
   }
 
-  const idDisplay = document.getElementById('anonymousUserIdDisplay');
-  if (idDisplay && userId) {
-    idDisplay.value = userId;
+  updateAuthUIState();
+
+  // Alert user of their new Unique ID if newly created or alert hasn't been acknowledged
+  if (userId && (isBrandNew || localStorage.getItem('shoi_id_alert_shown') !== userId)) {
+    setTimeout(() => {
+      showUniqueIdAlert('🌸 স্বাগতম! আপনার গোপন ইউনিক আইডি');
+    }, 700);
   }
 }
 
@@ -1191,15 +1229,198 @@ function renderPregnancyStatus(data) {
   dangerUl.innerHTML = m.urgent_warning_signs_bn.map(s => `<li>${s}</li>`).join('');
 }
 
-// 8. Settings Logic
+// 8. Settings & Authentication Logic (Login, Logout, Unique ID Alert)
 function setupSettings() {
+  // Copy ID handlers
+  const copyId = (idValue) => {
+    if (!idValue) return;
+    navigator.clipboard.writeText(idValue).then(() => {
+      showToast('গোপন ইউনিক আইডি কপি করা হয়েছে!');
+    }).catch(() => {
+      showToast('আইডি কপি করা হয়েছে!');
+    });
+  };
+
   const copyBtn = document.getElementById('copyIdBtn');
-  copyBtn.addEventListener('click', () => {
-    const idField = document.getElementById('anonymousUserIdDisplay');
-    idField.select();
-    navigator.clipboard.writeText(idField.value);
-    showToast('আইডি কপি করা হয়েছে!');
-  });
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const idField = document.getElementById('anonymousUserIdDisplay');
+      if (idField) copyId(idField.value);
+    });
+  }
+
+  const modalCopyBtn = document.getElementById('uniqueIdModalCopyBtn');
+  if (modalCopyBtn) {
+    modalCopyBtn.addEventListener('click', () => {
+      copyId(userId);
+    });
+  }
+
+  const logoutModalCopyBtn = document.getElementById('logoutModalCopyBtn');
+  if (logoutModalCopyBtn) {
+    logoutModalCopyBtn.addEventListener('click', () => {
+      copyId(userId);
+    });
+  }
+
+  // Show / Close Unique ID Alert Modal
+  const showIdAlertModalBtn = document.getElementById('showIdAlertModalBtn');
+  if (showIdAlertModalBtn) {
+    showIdAlertModalBtn.addEventListener('click', () => {
+      showUniqueIdAlert('🌸 আপনার গোপন ইউনিক আইডি ও জরুরি সতর্কতা');
+    });
+  }
+
+  const closeUniqueIdModalBtn = document.getElementById('closeUniqueIdModalBtn');
+  const uniqueIdAlertModal = document.getElementById('uniqueIdAlertModal');
+  if (closeUniqueIdModalBtn && uniqueIdAlertModal) {
+    closeUniqueIdModalBtn.addEventListener('click', () => {
+      if (userId) {
+        localStorage.setItem('shoi_id_alert_shown', userId);
+      }
+      uniqueIdAlertModal.style.display = 'none';
+      showToast('আইডি সংরক্ষণ সম্পন্ন হয়েছে');
+    });
+  }
+
+  // --- LOGOUT SYSTEM WITH SAFE ID ALERT MODAL ---
+  const logoutTriggerBtn = document.getElementById('logoutTriggerBtn');
+  const logoutConfirmModal = document.getElementById('logoutConfirmModal');
+  const cancelLogoutBtn = document.getElementById('cancelLogoutBtn');
+  const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+  const logoutModalUserId = document.getElementById('logoutModalUserId');
+
+  if (logoutTriggerBtn && logoutConfirmModal) {
+    logoutTriggerBtn.addEventListener('click', () => {
+      if (logoutModalUserId && userId) {
+        logoutModalUserId.textContent = userId;
+      }
+      logoutConfirmModal.style.display = 'flex';
+    });
+  }
+
+  if (cancelLogoutBtn && logoutConfirmModal) {
+    cancelLogoutBtn.addEventListener('click', () => {
+      logoutConfirmModal.style.display = 'none';
+    });
+  }
+
+  if (confirmLogoutBtn && logoutConfirmModal) {
+    confirmLogoutBtn.addEventListener('click', () => {
+      // Clear authenticated session tokens
+      token = null;
+      userId = null;
+      localStorage.removeItem('shoi_token');
+      localStorage.removeItem('shoi_user_id');
+      localStorage.removeItem('shoi_id_alert_shown');
+
+      logoutConfirmModal.style.display = 'none';
+      updateAuthUIState();
+
+      // Clear cached period logs on screen
+      const periodListEl = document.getElementById('periodList');
+      if (periodListEl) periodListEl.innerHTML = '<li class="empty-text">কোনো তথ্য নেই</li>';
+      const moodSuggestion = document.getElementById('moodSuggestionText');
+      if (moodSuggestion) moodSuggestion.textContent = 'আপনার মেজাজের বিশ্লেষণ দেখতে লগ করুন।';
+
+      showToast('সফলভাবে লগআউট করা হয়েছে। ইউনিক আইডি দিয়ে পুনরায় লগইন করতে পারবেন।');
+    });
+  }
+
+  // --- LOGIN SYSTEM WITH UNIQUE ID & OPTIONAL PIN ---
+  const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+  const loginUserIdInput = document.getElementById('loginUserIdInput');
+  const loginPinInput = document.getElementById('loginPinInput');
+
+  if (loginSubmitBtn && loginUserIdInput) {
+    loginSubmitBtn.addEventListener('click', async () => {
+      const inputId = loginUserIdInput.value.trim();
+      const inputPin = loginPinInput ? loginPinInput.value.trim() : '';
+
+      if (!inputId) {
+        showToast('দয়া করে আপনার গোপন ইউনিক আইডি লিখুন বা পেস্ট করুন', true);
+        loginUserIdInput.focus();
+        return;
+      }
+
+      setVoiceState('thinking');
+      try {
+        const payload = { user_id: inputId };
+        if (inputPin) {
+          payload.pin = inputPin;
+        }
+
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          token = data.access_token;
+          userId = data.user_id;
+          localStorage.setItem('shoi_token', token);
+          localStorage.setItem('shoi_user_id', userId);
+          localStorage.setItem('shoi_id_alert_shown', userId);
+
+          updateAuthUIState();
+          loginUserIdInput.value = '';
+          if (loginPinInput) loginPinInput.value = '';
+
+          // Reload user's existing health history
+          if (typeof fetchPeriods === 'function') fetchPeriods();
+          if (typeof fetchMoods === 'function') fetchMoods();
+          if (typeof loadPrivacyPreferences === 'function') loadPrivacyPreferences();
+
+          setVoiceState('idle');
+          showToast('স্বাগতম! সফলভাবে আপনার অ্যাকাউন্টে লগইন হয়েছে।');
+        } else if (res.status === 404) {
+          setVoiceState('idle');
+          showToast('এই আইডি দিয়ে কোনো অ্যাকাউন্ট পাওয়া যায়নি। সঠিক আইডি দিন।', true);
+        } else if (res.status === 401) {
+          setVoiceState('idle');
+          showToast('ভুল পিন কোড! দয়া করে সঠিক পিন দিন।', true);
+        } else {
+          setVoiceState('idle');
+          showToast('লগইন করতে সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।', true);
+        }
+      } catch (err) {
+        setVoiceState('idle');
+        console.error('Login error:', err);
+        showToast('সার্ভারের সাথে সংযোগ করা যায়নি। ইন্টারনেট পরীক্ষা করুন।', true);
+      }
+    });
+  }
+
+  // --- CREATE NEW ANONYMOUS ACCOUNT BUTTON ---
+  const createNewAccountBtn = document.getElementById('createNewAccountBtn');
+  if (createNewAccountBtn) {
+    createNewAccountBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch(`${API_BASE}/auth/anonymous`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ age_group: '20-29', language: 'bn' })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          token = data.access_token;
+          userId = data.user_id;
+          localStorage.setItem('shoi_token', token);
+          localStorage.setItem('shoi_user_id', userId);
+          updateAuthUIState();
+          showUniqueIdAlert('🌸 আপনার নতুন গোপন ইউনিক আইডি');
+          showToast('নতুন গোপন আইডি সফলভাবে তৈরি হয়েছে!');
+        } else {
+          showToast('নতুন আইডি তৈরিতে সমস্যা হয়েছে।', true);
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('সার্ভারের সাথে যোগাযোগ করা যায়নি।', true);
+      }
+    });
+  }
 
   // Save PIN button
   const savePinBtn = document.getElementById('savePinBtn');
@@ -1231,28 +1452,30 @@ function setupSettings() {
   }
 
   const deleteBtn = document.getElementById('deleteAllDataBtn');
-  deleteBtn.addEventListener('click', async () => {
-    if (confirm('আপনি কি নিশ্চিত যে আপনার সমস্ত তথ্য চিরতরে মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না।')) {
-      try {
-        const res = await fetch(`${API_BASE}/auth/me`, {
-          method: 'DELETE',
-          headers: getAuthHeaders()
-        });
-        if (res.ok) {
-          showToast('আপনার সমস্ত তথ্য সফলভাবে মুছে ফেলা হয়েছে।');
-          localStorage.clear();
-          setTimeout(() => {
-            window.location.reload();
-          }, 1200);
-        } else {
-          showToast('তথ্য মুছতে সমস্যা হয়েছে।', true);
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async () => {
+      if (confirm('আপনি কি নিশ্চিত যে আপনার সমস্ত তথ্য চিরতরে মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না।')) {
+        try {
+          const res = await fetch(`${API_BASE}/auth/me`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+          });
+          if (res.ok) {
+            showToast('আপনার সমস্ত তথ্য সফলভাবে মুছে ফেলা হয়েছে।');
+            localStorage.clear();
+            setTimeout(() => {
+              window.location.reload();
+            }, 1200);
+          } else {
+            showToast('তথ্য মুছতে সমস্যা হয়েছে।', true);
+          }
+        } catch (e) {
+          console.error(e);
+          showToast('সার্ভারের সাথে যোগাযোগ করা যায়নি।', true);
         }
-      } catch (e) {
-        console.error(e);
-        showToast('সার্ভারের সাথে যোগাযোগ করা যায়নি।', true);
       }
-    }
-  });
+    });
+  }
 }
 
 // 9. Shared-Phone Privacy & Decoy Camouflage Features

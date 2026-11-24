@@ -109,10 +109,37 @@ def assess_crisis_risk(
     # =========================================================================
     # LEVEL 3: POSSIBLE IMMEDIATE DANGER (Lethal Means & Explicit Suicide Stems)
     # =========================================================================
-    # 3.1 Rural Agricultural Lethal Means (pesticides, agricultural poison)
-    lethal_means = veiled_data.get("rural_lethal_means_access", [
-        "ফসলের বিষ", "ঘাসের ওষুধ", "কীটনাশক", "কীটনাশকের বোতল", "পোকার ওষুধ", "নদীর জলে গা ভাসায় দেব"
-    ])
+    # 3.1 Rural Agricultural Lethal Means (pesticides, agricultural poison, drowning, hanging)
+    RURAL_LETHAL_PATTERNS = [
+        r"ফসলের\s*বিষ",
+        r"কীটনাশক",
+        r"ঘাসের\s*(?:ওষুধ|ওষুদ|বিষ)",
+        r"পোকার\s*(?:ওষুধ|ওষুদ|বিষ)",
+        r"গা\s*ভাসা",
+        r"নদীর\s*জলে",
+        r"নদীতে\s*ভেসে",
+        r"পুকুরে\s*ঝাঁপ",
+        r"গলায়\s*দড়ি|গলায়\s*দড়ি",
+        r"ফাঁস\s*(?:দেওয়া|নেওয়া|দেয়া)",
+        r"বিষ\s*(?:খেয়ে|খাব|খাওয়া)"
+    ]
+    for pat in RURAL_LETHAL_PATTERNS:
+        if re.search(pat, norm_text):
+            detected_signals.append("rural_lethal_means_access")
+            return CrisisAssessResponse(
+                risk_level="LEVEL_3",
+                level_numeric=3,
+                confidence=0.98,
+                detected_signal_categories=detected_signals,
+                is_veiled=True,
+                covert_alert=True,
+                action_required=True,
+                safety_response_bn="আপু, আপনার কষ্ট আমরা অনুভব করছি। কোনো কঠিন সিদ্ধান্ত নেবেন না। এখনই ১০৯ (নারী সহায়তা সেল) বা ৯৯৯-এ সাহায্য নিন।",
+                emergency_helpline="109",
+                bystander_safe_audio_bn=BYSTANDER_SAFE_AUDIO_BN
+            )
+
+    lethal_means = veiled_data.get("rural_lethal_means_access", [])
     for lm in lethal_means:
         if lm in norm_text:
             detected_signals.append("rural_lethal_means_access")
@@ -143,7 +170,7 @@ def assess_crisis_risk(
                 covert_alert=False,
                 action_required=True,
                 safety_response_bn="আপু, আপনার জীবন অত্যন্ত মূল্যবান। আপনি একা নন। দয়া করে নিজের ক্ষতি করবেন না। এখনই ৯৯৯ বা ১০৯ এ বিনামূল্যে কল করুন।",
-                emergency_helpline="999",
+                emergency_helpline="109",
                 bystander_safe_audio_bn=BYSTANDER_SAFE_AUDIO_BN
             )
 
@@ -158,7 +185,7 @@ def assess_crisis_risk(
                 confidence=0.95,
                 detected_signal_categories=detected_signals,
                 action_required=True,
-                emergency_helpline="999",
+                emergency_helpline="109",
                 bystander_safe_audio_bn=BYSTANDER_SAFE_AUDIO_BN
             )
 
@@ -166,27 +193,69 @@ def assess_crisis_risk(
     # LEVEL 2: SIGNIFICANT DISTRESS (Veiled suicidal resignation, burdensomeness, domestic entrapment)
     # =========================================================================
     # 2.1 Passive Resignation & Death Wishes
-    passive_death = veiled_data.get("passive_resignation_death_wishes", [
-        "আল্লাহ যেন আমাকে তুলে নেয়", "ঘুমাইয়া যদি আর না উঠতাম", "আমার কি মরণ নাই", "এই জীবনের চেয়ে মরণ ভালো ছিল"
-    ])
+    passive_patterns = [
+        r"আল্লাহ\s*(?:কেন\s*)?(?:আমাকে\s*)?(?:তুলে|উঠায়)\s*(?:নেয়|নাও)",
+        r"ঘুম(?:িয়ে|াইয়া|াইয়া)?\s*থাকলে",
+        r"আর\s*(?:কোনোদিন|কখনো|কখনও)?\s*(?:উঠতে\s*না\s*হতো|না\s*উঠতাম)",
+        r"আর\s*চোখ\s*খুলতে\s*ইচ্ছা\s*করে\s*না",
+        r"আর\s*জাগতে\s*চাই\s*না",
+        r"আমার\s*কি\s*মরণ\s*নাই",
+        r"(?:জীবনের|বেঁচে\s*থাকার)\s*চেয়ে\s*মরণ\s*ভালো",
+        r"শেষ\s*হয়ে\s*গেলে(?:ই)?\s*(?:সবার\s*)?শান্তি",
+        r"পরানডা\s*আর\s*সয়\s*না",
+        r"মুক্তি\s*পেলে\s*বাঁচতাম"
+    ]
+    for pat in passive_patterns:
+        if re.search(pat, norm_text):
+            detected_signals.append("passive_resignation_death_wishes")
+            break
+
+    passive_death = veiled_data.get("passive_resignation_death_wishes", [])
     for p in passive_death:
-        if p in norm_text:
+        if p in norm_text and "passive_resignation_death_wishes" not in detected_signals:
             detected_signals.append("passive_resignation_death_wishes")
 
     # 2.2 Burdensomeness and Erasure Metaphors
-    burdensome = veiled_data.get("burdensomeness_and_erasure", [
-        "আমি না থাকলেই সবার ভালো", "সংসারের বোঝা হয়ে আছি", "কোথাও হারিয়ে যেতে চাই চিরতরে", "হারিয়ে যেতে ইচ্ছা করে"
-    ])
+    burdensome_patterns = [
+        r"না\s*থাকলে(?:ই)?\s*সবার(?:ই)?\s*(?:ভালো|সুখ)",
+        r"(?:সংসারের|সবার)\s*বোঝা",
+        r"বোঝা\s*(?:হয়ে|হয়ে)",
+        r"(?:চিরতরে|চিরদিনের\s*জন্য)\s*হারিয়ে\s*যেতে|হারিয়ে\s*যেতে",
+        r"হারিয়ে\s*যেতে\s*ইচ্ছা\s*করে|হারিয়ে\s*যেতে\s*ইচ্ছা\s*করে",
+        r"বেঁচে\s*থাকার\s*(?:কোনো|কোন)?\s*(?:অর্থ|মানে|লাভ|উদ্দেশ্য).*?(?:নাই|নেই)",
+        r"জীবন\s*রেখে\s*(?:কোনো|কোন)\s*লাভ\s*(?:নাই|নেই)",
+        r"কাউকে\s*আর\s*জ্বালাব\s*না",
+        r"আমাকে\s*ছাড়া\s*সবাই\s*ভালো\s*থাকবে"
+    ]
+    for pat in burdensome_patterns:
+        if re.search(pat, norm_text):
+            detected_signals.append("burdensomeness_and_erasure")
+            break
+
+    burdensome = veiled_data.get("burdensomeness_and_erasure", [])
     for b in burdensome:
-        if b in norm_text:
+        if b in norm_text and "burdensomeness_and_erasure" not in detected_signals:
             detected_signals.append("burdensomeness_and_erasure")
 
     # 2.3 Hopeless Entrapment and Domestic Abuse
-    entrapment = veiled_data.get("hopeless_entrapment_and_abuse", [
-        "চারিদিকে অন্ধকার লাগে কোনো পথ নাই", "বাপের বাড়ি গিয়ে আর মুখ দেখাব না", "দম বন্ধ হয়ে আসতেছে আর পারি না"
-    ])
+    entrapment_patterns = [
+        r"চারিদিকে\s*অন্ধকার",
+        r"সব\s*পথ\s*বন্ধ",
+        r"কোনো\s*পথ\s*(?:নাই|নেই|খোলা\s*নেই)",
+        r"বাপের\s*বাড়ি\s*গিয়ে\s*আর\s*মুখ\s*দেখাব\s*না",
+        r"দম\s*বন্ধ\s*হয়ে\s*আস",
+        r"অত্যাচারের\s*চেয়ে\s*মরে\s*যাওয়া\s*ভালো",
+        r"মারধোর\s*আর\s*সইতে\s*পারি\s*না",
+        r"এই\s*নরক\s*থেকে\s*মুক্তি\s*চাই"
+    ]
+    for pat in entrapment_patterns:
+        if re.search(pat, norm_text):
+            detected_signals.append("hopeless_entrapment_and_abuse")
+            break
+
+    entrapment = veiled_data.get("hopeless_entrapment_and_abuse", [])
     for e in entrapment:
-        if e in norm_text:
+        if e in norm_text and "hopeless_entrapment_and_abuse" not in detected_signals:
             detected_signals.append("hopeless_entrapment_and_abuse")
 
     # Contextual multi-turn escalation check

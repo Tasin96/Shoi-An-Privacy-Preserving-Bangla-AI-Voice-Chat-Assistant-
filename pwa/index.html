@@ -389,29 +389,83 @@
           <p>আপনার পরিচয় ও তথ্যের পূর্ণ নিয়ন্ত্রণ আপনার হাতে</p>
         </div>
 
-        <div class="card settings-card">
-          <div class="setting-item">
-            <label>আপনার গোপন আইডি (Anonymous ID)</label>
+        <!-- Logged-in View -->
+        <div id="loggedInSettingsBox" class="card settings-card">
+          <div class="account-status-badge">
+            <span class="status-dot"></span>
+            <span>অ্যাকাউন্ট সক্রিয় রয়েছে</span>
+          </div>
+
+          <div class="setting-item" style="margin-top: 10px;">
+            <label>আপনার গোপন ইউনিক আইডি (Unique ID)</label>
             <div class="id-display-row">
               <input type="text" id="anonymousUserIdDisplay" readonly value="তৈরি হচ্ছে...">
-              <button id="copyIdBtn" class="copy-btn">কপি</button>
+              <button id="copyIdBtn" class="copy-btn">📋 কপি</button>
             </div>
             <small>এই আইডিতে আপনার কোনো নাম, ফোন বা ইমেইল যুক্ত নেই।</small>
           </div>
 
+          <!-- Alert Reminder Banner -->
+          <div class="id-alert-banner">
+            <div class="id-alert-icon">⚠️</div>
+            <div class="id-alert-content">
+              <strong>আইডিটি অবশ্যই মনে রাখুন বা কোথাও লিখে রাখুন!</strong>
+              <p>যেহেতু সই অ্যাপে কোনো ফোন নম্বর নেওয়া হয় না, তাই পরবর্তীতে বা অন্য ফোনে আপনার মাসিক রেকর্ড ও স্বাস্থ্যতথ্য ফিরিয়ে আনতে এই ইউনিক আইডিটিই একমাত্র চাবিকাঠি।</p>
+              <button id="showIdAlertModalBtn" class="link-btn">📢 সতর্কবার্তা ও আইডি বড় করে দেখুন</button>
+            </div>
+          </div>
+
           <div class="setting-item" style="margin-top: 15px;">
             <label>পিন কোড (PIN Protection)</label>
-            <p><small>অ্যাপ পুনরায় খোলার সময় ৪ ডিজিটের পিন চাইলে সেট করুন।</small></p>
+            <p><small>লগইন বা অ্যাপ খোলার সময় ৪-৬ ডিজিটের পিন চাইলে সেট করুন।</small></p>
             <div class="pin-row">
               <input type="password" id="userPinInput" placeholder="৪-৬ ডিজিটের পিন" maxlength="6">
               <button id="savePinBtn" class="secondary-btn">পিন সংরক্ষণ</button>
             </div>
           </div>
 
-          <div class="setting-item delete-box" style="margin-top: 25px;">
+          <!-- Account Actions (Logout) -->
+          <div class="setting-item" style="margin-top: 20px; border-top: 1px dashed var(--border); padding-top: 16px;">
+            <label>অ্যাকাউন্ট থেকে লগআউট</label>
+            <p><small>ডিভাইস থেকে সেশন বন্ধ করুন। আইডি সংরক্ষণ করা থাকলে পরে পুনরায় ঢুকতে পারবেন।</small></p>
+            <button id="logoutTriggerBtn" class="outline-warning-btn">🚪 অ্যাকাউন্ট থেকে লগআউট করুন</button>
+          </div>
+
+          <div class="setting-item delete-box" style="margin-top: 20px;">
             <label class="danger-label">সম্পূর্ণ তথ্য মুছে ফেলা (Wipe All Data)</label>
             <p><small>আপনার সংরক্ষিত সমস্ত মাসিক, মেজাজ এবং স্বাস্থ্য পরীক্ষার তথ্য এই ডিভাইস এবং সার্ভার থেকে চিরতরে মুছে ফেলুন।</small></p>
             <button id="deleteAllDataBtn" class="danger-btn">🗑️ আমার সব তথ্য চিরতরে মুছুন</button>
+          </div>
+        </div>
+
+        <!-- Logged-out / Switch Account View -->
+        <div id="loggedOutSettingsBox" class="card settings-card" style="display: none;">
+          <div class="account-loggedout-badge">
+            <span>🔒 বর্তমানে কোনো অ্যাকাউন্টে লগইন নেই</span>
+          </div>
+
+          <div class="login-card-section" style="margin-top: 15px;">
+            <h3 style="font-size: 16px; margin-bottom: 6px;">🔑 পূর্বের ইউনিক আইডি দিয়ে লগইন করুন</h3>
+            <p><small style="color: var(--text-muted);">আপনার পূর্বে সংরক্ষিত গোপন ইউনিক আইডি ও পিন (যদি থাকে) দিন:</small></p>
+            
+            <div style="margin-top: 12px;">
+              <label for="loginUserIdInput" style="font-size: 13px; font-weight: 600;">গোপন ইউনিক আইডি (Unique ID):</label>
+              <input type="text" id="loginUserIdInput" placeholder="যেমন: 9bf04021-2556-4561-..." style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-top: 4px; font-size: 13px;">
+            </div>
+
+            <div style="margin-top: 10px;">
+              <label for="loginPinInput" style="font-size: 13px; font-weight: 600;">পিন কোড (যদি পূর্বে সেট করা থাকে):</label>
+              <input type="password" id="loginPinInput" placeholder="৪-৬ ডিজিটের পিন (ঐচ্ছিক)" maxlength="6" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-top: 4px; font-size: 13px;">
+            </div>
+
+            <button id="loginSubmitBtn" class="primary-btn" style="margin-top: 14px;">🔑 লগইন করুন</button>
+          </div>
+
+          <div style="text-align: center; margin: 18px 0; color: var(--text-muted); font-size: 13px;">— অথবা —</div>
+
+          <div class="create-new-account-box" style="text-align: center;">
+            <p><small style="color: var(--text-muted);">আপনার কি কোনো আইডি নেই বা সম্পূর্ণ নতুন শুরু করতে চান?</small></p>
+            <button id="createNewAccountBtn" class="secondary-btn" style="width: 100%; margin-top: 6px;">➕ নতুন গোপন আইডি তৈরি করুন</button>
           </div>
         </div>
       </section>
@@ -513,6 +567,52 @@
         </div>
         <div class="decoy-footer">
           <p id="decoyRestoreHint" class="decoy-hint">পর্দার ওপরে ৩ বার দ্রুত ট্যাপ করে স্বাভাবিক অ্যাপে ফিরুন</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unique ID Important Alert Modal -->
+    <div id="uniqueIdAlertModal" class="modal-overlay" style="display: none;">
+      <div class="auth-modal-card">
+        <div class="modal-icon-top">🌸</div>
+        <h3 id="uniqueIdModalTitle" style="margin-bottom: 8px;">আপনার গোপন ইউনিক আইডি</h3>
+        <p class="modal-info-text">
+          আপনার নাম, ফোন বা ইমেইল ছাড়া আপনার সমস্ত স্বাস্থ্যতথ্য নিরাপদে রাখতে এই অনন্য আইডিটি তৈরি হয়েছে।
+        </p>
+        <div class="id-highlight-box">
+          <span id="uniqueIdModalValue" style="font-weight: 700; color: #1e293b;">...</span>
+          <button id="uniqueIdModalCopyBtn" class="copy-btn">📋 কপি</button>
+        </div>
+        <div class="modal-warning-note">
+          ⚠️ <strong>জরুরি সতর্কবার্তা:</strong> লগআউট করার পর বা অন্য কোনো ফোনে আপনার আগের মাসিক রেকর্ড, লক্ষণ ও ইতিহাস ফিরে পেতে এই আইডিটি সংরক্ষণ করা <strong>একান্ত আবশ্যক</strong>। আইডিটি কোথাও লিখে বা কপি করে রাখুন!
+        </div>
+        <div style="margin-top: 15px;">
+          <button id="closeUniqueIdModalBtn" class="primary-btn">আমি সংরক্ষণ করেছি (ঠিক আছে)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutConfirmModal" class="modal-overlay" style="display: none;">
+      <div class="auth-modal-card">
+        <div class="modal-icon-top">🚪</div>
+        <h3 style="margin-bottom: 8px;">লগআউট নিশ্চিতকরণ</h3>
+        <p class="modal-info-text">
+          আপনি কি নিশ্চিতভাবে এই ডিভাইস থেকে লগআউট করতে চান?
+        </p>
+        <div class="id-highlight-box">
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted);">আপনার বর্তমান আইডি:</div>
+            <strong id="logoutModalUserId" style="font-size: 12.5px; color: #1e293b;">...</strong>
+          </div>
+          <button id="logoutModalCopyBtn" class="copy-btn">📋 কপি</button>
+        </div>
+        <div class="modal-warning-note">
+          ⚠️ <strong>সতর্কতা:</strong> লগআউট করলে এই ডিভাইসের সেশন বন্ধ হয়ে যাবে। পুনরায় এই অ্যাকাউন্টে ঢুকতে উপরের ইউনিক আইডিটি প্রয়োজন হবে। আইডিটি কপি করা হয়েছে কি না নিশ্চিত করুন।
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 16px;">
+          <button id="cancelLogoutBtn" class="secondary-btn" style="flex: 1;">বাতিল</button>
+          <button id="confirmLogoutBtn" class="danger-btn" style="flex: 1; margin-top: 0;">লগআউট করুন</button>
         </div>
       </div>
     </div>

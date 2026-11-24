@@ -154,10 +154,10 @@ def extract_health_information(text: str) -> ExtractedHealthInfo:
     # 6. Pain Intensity & Dysmenorrhea
     if re.search(r"(পেটে\s*(?:অনেক|প্রচণ্ড|খুব|তীব্র)\s*ব্যথা|তলপেটে\s*তীব্র\s*ব্যথা|ব্যথায়\s*মরছি|অসহ্য\s*ব্যথা)", norm):
         info.pain_intensity = 8
-        info.associated_symptoms.append("severe_dysmenorrhea")
+        info.associated_symptoms.append("severe_dysmenorrhea_তীব্র_পেটে_ব্যথা")
     elif re.search(r"(পেট\s*ব্যথা|তলপেটে\s*ব্যথা|পেটে\s*মোচড়|কোমর\s*ব্যথা)", norm):
         info.pain_intensity = 5
-        info.associated_symptoms.append("mild_dysmenorrhea")
+        info.associated_symptoms.append("mild_dysmenorrhea_পেটে_ব্যথা")
 
     # 7. Other Physical Symptoms
     if re.search(r"(বমি\s*ভাব|বমি\s*লাগে|বমি\s*হচ্ছে)", norm):
@@ -168,7 +168,7 @@ def extract_health_information(text: str) -> ExtractedHealthInfo:
         info.associated_symptoms.append("white_discharge")
 
     # 8. Mood Logging
-    if re.search(r"(মন\s*(?:খুব\s*)?খারাপ|মন\s*ভালো\s*নেই|কষ্ট\s*লাগছে|হতাশ|কান্না\s*পাচ্ছে)", norm):
+    if re.search(r"(মন(?:টা|ডা)?\s*(?:খুব\s*)?খারাপ|মন(?:টা|ডা)?\s*ভালো\s*নে[ইঈ]|কষ্ট\s*লাগছে|হতাশ|কান্না\s*পাচ্ছে)", norm):
         info.mood = "sad"
         if not info.event_type:
             info.event_type = "mood"
