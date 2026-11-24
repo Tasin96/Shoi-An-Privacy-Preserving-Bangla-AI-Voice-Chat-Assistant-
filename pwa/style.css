@@ -321,11 +321,7 @@ body {
 }
 
 .user-query-bubble {
-  background: #FFFFFF;
-  border: 1px solid #F0D5DD;
-  border-radius: 12px;
-  padding: 8px 12px;
-  margin-bottom: 12px;
+  display: none !important;
 }
 
 .user-label {

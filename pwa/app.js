@@ -829,14 +829,9 @@ function displayVoiceResponse(data) {
     voiceResponseCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, 100);
 
-  // Display user query if transcript exists
-  if (userQueryBubble && userQueryText) {
-    if (data.transcript && data.transcript.trim()) {
-      userQueryText.textContent = data.transcript;
-      userQueryBubble.style.display = 'block';
-    } else {
-      userQueryBubble.style.display = 'none';
-    }
+  // User query bubble hidden per UI requirements
+  if (userQueryBubble) {
+    userQueryBubble.style.display = 'none';
   }
 
   // Citations (hidden per UI requirements)
