@@ -137,9 +137,9 @@ class OpenAICompatibleProvider(BaseLLMProvider):
 
 class GeminiProvider(BaseLLMProvider):
     """Google Gemini Flash provider."""
-    def __init__(self, api_key: str = None, model: str = "gemini-1.5-flash", timeout: float = 30.0):
+    def __init__(self, api_key: str = None, model: str = None, timeout: float = 30.0):
         self.api_key = api_key or getattr(settings, "GEMINI_API_KEY", None)
-        self.model = model
+        self.model = model or getattr(settings, "GEMINI_MODEL", None) or getattr(settings, "LLM_MODEL", "gemini-3.1-flash-lite")
         self.timeout = timeout
 
     async def check_health(self) -> bool:
@@ -290,7 +290,8 @@ class UnifiedLLMProvider:
         
         if self.primary_provider_type == "gemini":
             if getattr(settings, "GEMINI_API_KEY", None):
-                return GeminiProvider(api_key=settings.GEMINI_API_KEY)
+                model_name = getattr(settings, "GEMINI_MODEL", None) or getattr(settings, "LLM_MODEL", "gemini-3.1-flash-lite")
+                return GeminiProvider(api_key=settings.GEMINI_API_KEY, model=model_name)
             return self.mock_provider
 
         return self.mock_provider

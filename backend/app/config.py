@@ -24,8 +24,9 @@ class Settings(BaseSettings):
     )
 
     # LLM Settings - Open-source, Local & Multi-provider
-    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "ollama")  # ollama, openai_compatible, gemini, or mock
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen2.5:7b")
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")  # gemini, ollama, openai_compatible, or mock
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-3.1-flash-lite")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
     OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     LLM_TIMEOUT_SECONDS: float = float(os.getenv("LLM_TIMEOUT_SECONDS", "30.0"))
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY", "")

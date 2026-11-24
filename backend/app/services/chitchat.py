@@ -4,19 +4,21 @@ from typing import Optional, Tuple
 from app.services.rag import normalize_bangla_text
 
 # Clinical keywords that indicate a strictly medical or reproductive health diagnosis query
-CLINICAL_KEYWORDS = {
-    "রক্তক্ষরণ", "রক্তস্রাব", "মাসিক", "পিরিয়ড", "পিরিয়ডের",
-    "গর্ভ", "গর্ভবতী", "প্রেগন্যান্ট", "প্রেগনেন্সি", "প্রসব", "ওভুলেশন",
-    "পিসিওএস", "pcos", "ওষুধ", "ঔষধ", "বড়ি", "ট্যাবলেট", "ডোজ", "ইনজেকশন",
-    "সংক্রমণ", "স্রাব", "সাদাস্রাব", "খিঁচুনি", "লোম", "হরমোন",
-    "ক্যান্সার", "টিউমার", "অপারেশন", "ডায়াবেটিস", "প্রেসার", "বিপি", "রক্তচাপ"
-}
+CLINICAL_KEYWORDS = [
+    "রক্তক্ষরণ", "রক্তস্রাব", "মাসিক", "পিরিয়ড", "পিরিয়ডে", "মেনস্ট্রু", "ঋতুস্রাব",
+    "গর্ভ", "গর্ভবতী", "প্রেগন্যান্ট", "প্রেগনেন্সি", "প্রসব", "ওভুলেশন", "গর্ভপাত",
+    "পিসিওএস", "pcos", "pcod", "ওষুধ", "ঔষধ", "বড়ি", "ট্যাবলেট", "ডোজ", "ইনজেকশন",
+    "সংক্রমণ", "স্রাব", "সাদাস্রাব", "যোনি", "চুলকানি", "জ্বালাপোড়া", "খিঁচুনি", "লোম", "হরমোন",
+    "স্তন", "ব্রেস্ট", "নিপল", "টিউমার", "ক্যান্সার", "অপারেশন",
+    "ডায়াবেটিস", "প্রেসার", "বিপি", "রক্তচাপ", "ব্যথা", "ব্যাথা", "চাবায়", "কামড়ায়",
+    "তলপেট", "পেটব্যথা", "প্রস্রাব", "ইউরিন", "ইউটিআই", "uti", "বমি", "রক্তস্বল্পতা", "অ্যানিমিয়া",
+    "থাইরয়েড", "থাইরয়েড", "ওজন", "ব্রণ", "ইনফার্টিলিটি", "বন্ধ্যাত্ব", "গাইনি", "ডাক্তার"
+]
 
 def is_medical_query(text: str) -> bool:
     """Checks if text contains clinical or reproductive health keywords."""
     norm = normalize_bangla_text(text.lower())
-    words = set(re.findall(r"[\u0980-\u09ffA-Za-z]+", norm))
-    return bool(words.intersection(CLINICAL_KEYWORDS))
+    return any(kw in norm for kw in CLINICAL_KEYWORDS)
 
 def normalize_conversational_text(text: str) -> str:
     """
@@ -1052,8 +1054,8 @@ def get_chitchat_response(message: str) -> Optional[Tuple[str, float]]:
     if not message:
         return None
 
-    # Step 0: Defer explicit PCOS/PCOD medical queries directly to grounded RAG
-    if re.search(r"(?:pcos|pcod|পিসিওএস|পিসিওডি)", message, re.IGNORECASE):
+    # Step 0: Defer all medical, reproductive health, and clinical queries directly to RAG and LLM
+    if is_medical_query(message):
         return None
 
     # Apply conversational dialect and phonetic normalization

@@ -153,29 +153,41 @@ class LLMService:
         return eng_chars > 3 and eng_chars > bn_chars
 
     async def _call_gemini(self, message: str, context: str, history: Optional[List[ChatMessage]]) -> Optional[str]:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+        model = getattr(settings, "GEMINI_MODEL", None) or getattr(settings, "LLM_MODEL", "gemini-3.1-flash-lite")
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={settings.GEMINI_API_KEY}"
         
-        prompt = (
+        sys_instruction = (
             f"{self.system_prompt}\n\n"
             f"=== Medical Health Context (WHO/DGHS) ===\n{context or 'No clinical context, friendly guidance.'}\n\n"
-            f"User Query: {message}\n"
             f"Instructions:\n"
-            f"1. You are Shoi, a compassionate, evidence-based women's reproductive health guide.\n"
-            f"2. NEVER pretend to be a human doctor or prescribe medications. Suggest consulting a verified gynecologist.\n"
-            f"3. Language: Match user language (English if asked in English, Bangla if asked in Bangla).\n"
-            f"4. Explain medical terminology simply and identify red flags immediately."
+            f"1. You are Shoi (সই), a warm, compassionate, sisterly reproductive health AI assistant for women in Bangladesh.\n"
+            f"2. Never repeat or echo the user's question; deliver direct, friendly, and practical advice.\n"
+            f"3. Never pretend to be a licensed medical doctor or prescribe prescription drugs. Recommend consulting a qualified gynecologist when appropriate.\n"
+            f"4. Language: Always respond in natural, sympathetic Bengali (or English if user queries in English)."
         )
         
+        contents = []
+        if history:
+            for h in history[-3:]:
+                role = "user" if h.role == "user" else "model"
+                contents.append({"role": role, "parts": [{"text": h.content}]})
+        contents.append({"role": "user", "parts": [{"text": message}]})
+        
         payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"temperature": 0.4, "maxOutputTokens": 350}
+            "system_instruction": {"parts": [{"text": sys_instruction}]},
+            "contents": contents,
+            "generationConfig": {"temperature": 0.35, "maxOutputTokens": 450}
         }
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(url, json=payload)
             if resp.status_code == 200:
                 data = resp.json()
-                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                clean_text = re.sub(r'^(?:প্রশ্ন|উত্তর|Regarding|Question|Answer)[:\-–\s]+', '', text, flags=re.IGNORECASE).strip()
+                return clean_text
+            else:
+                print(f"Gemini API returned status {resp.status_code}: {resp.text}")
         return None
 
     async def _call_openai(self, message: str, context: str, history: Optional[List[ChatMessage]]) -> Optional[str]:
