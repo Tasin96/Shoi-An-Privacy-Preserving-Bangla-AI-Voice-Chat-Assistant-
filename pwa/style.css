@@ -878,6 +878,70 @@ body {
   margin: 10px 0 16px 0;
 }
 
+/* Voice Cycle Q&A Action Box */
+.voice-cycle-action-box {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: #fff1f2;
+  border: 1.5px solid #fecdd3;
+  border-radius: 16px;
+  text-align: left;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+.voice-cycle-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9d174d;
+  margin-bottom: 4px;
+}
+
+.voice-cycle-desc {
+  font-size: 13px;
+  color: #831843;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.voice-cycle-btn-row {
+  display: flex;
+  gap: 10px;
+}
+
+.voice-cycle-btn-row .primary-btn {
+  padding: 9px 14px;
+  font-size: 13.5px;
+  flex: 1;
+  background: #db2777;
+  color: #fff;
+  border-radius: 10px;
+  margin-top: 0;
+}
+
+.voice-cycle-btn-row .secondary-btn {
+  padding: 9px 14px;
+  font-size: 13.5px;
+  flex: 1;
+  border-radius: 10px;
+  margin-top: 0;
+}
+
+.voice-cycle-saved-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ecfdf5;
+  border: 1.5px solid #a7f3d0;
+  border-radius: 12px;
+  padding: 11px 14px;
+  color: #065f46;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
 /* Bottom Navigation Bar */
 .bottom-nav {
   position: fixed;

@@ -83,6 +83,26 @@
           </div>
           <p class="response-text" id="responseText"></p>
           <div class="citations-container" id="citationsContainer" style="display: none;"></div>
+
+          <!-- Interactive Voice Q&A Cycle Tracking Action Box -->
+          <div id="voiceCycleActionBox" class="voice-cycle-action-box" style="display: none;">
+            <div class="voice-cycle-header">
+              <span>🩸</span>
+              <span>পিরিয়ড তথ্য নিশ্চিতকরণ</span>
+            </div>
+            <div class="voice-cycle-desc">
+              <strong id="voiceCycleSummaryText">তারিখ নিশ্চিতকরণ</strong><br>
+              <small style="color: var(--text-muted);">আপনি মুখে "হ্যাঁ" বলতে পারেন অথবা নিচের বোতাম চাপুন:</small>
+            </div>
+            <div id="voiceCycleBtnRow" class="voice-cycle-btn-row">
+              <button id="voiceCycleYesBtn" class="primary-btn">✓ হ্যাঁ, সংরক্ষণ করুন</button>
+              <button id="voiceCycleNoBtn" class="secondary-btn">✕ না, বাতিল</button>
+            </div>
+            <div id="voiceCycleSavedBadge" class="voice-cycle-saved-badge" style="display: none;">
+              <span>✅</span>
+              <span>মাসিক চক্রের তথ্য সফলভাবে সংরক্ষিত হয়েছে! ক্যালেন্ডার আপডেট হয়েছে।</span>
+            </div>
+          </div>
           
           <!-- Direct Emergency Hotline Calling Box -->
           <div id="emergencyInlineBox" class="emergency-inline-box" style="display: none;">
@@ -106,6 +126,7 @@
         <div class="quick-questions">
           <span class="quick-title">প্রয়োজনীয় স্বাস্থ্য প্রশ্ন (চাপুন):</span>
           <div class="chips-row">
+            <button class="chip" data-q="আমার পিরিয়ডের তথ্য রেকর্ড করতে চাই" style="border-color: #db2777; background: #fff1f2; font-weight: 600;">🎙️ পিরিয়ড ট্র্যাক করুন</button>
             <button class="chip" data-q="পিরিয়ডের ব্যথা কমানোর সহজ উপায় কি?">🩸 পিরিয়ডের ব্যথা</button>
             <button class="chip" data-q="পিসিওএস এর সাধারণ লক্ষণ কি কি?">🩺 পিসিওএস লক্ষণ</button>
             <button class="chip" data-q="আমার প্রতিদিন সাদা স্রাব হয়, এটা কি স্বাভাবিক?">🤍 সাদা স্রাব</button>

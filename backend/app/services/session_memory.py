@@ -135,6 +135,33 @@ class SessionMemory:
         if len(session["messages"]) > max_msgs:
             session["messages"] = session["messages"][-max_msgs:]
 
+    def get_pending_cycle(self, session_id: str) -> Optional[Dict[str, Any]]:
+        if not session_id or session_id not in self._sessions:
+            return None
+        return self._sessions[session_id].get("pending_cycle")
+
+    def set_pending_cycle(self, session_id: str, cycle_data: Optional[Dict[str, Any]]):
+        if not session_id:
+            return
+        now = time.time()
+        if session_id not in self._sessions:
+            self._sessions[session_id] = {
+                "created_at": now,
+                "last_active": now,
+                "messages": [],
+                "topics": ["menstrual_basics"],
+                "symptoms": [],
+                "last_topic": "menstrual_basics",
+                "pending_cycle": cycle_data
+            }
+        else:
+            self._sessions[session_id]["pending_cycle"] = cycle_data
+            self._sessions[session_id]["last_active"] = now
+
+    def clear_pending_cycle(self, session_id: str):
+        if session_id in self._sessions:
+            self._sessions[session_id]["pending_cycle"] = None
+
     def clear_session(self, session_id: str):
         if session_id in self._sessions:
             del self._sessions[session_id]

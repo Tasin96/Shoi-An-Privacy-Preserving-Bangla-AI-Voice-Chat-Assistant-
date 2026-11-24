@@ -28,3 +28,4 @@ class VoiceResponse(BaseModel):
     suggestions: List[str] = Field(default_factory=list)
     detected_topic: Optional[str] = None
     turn_count: int = 1
+    cycle_action: Optional[Dict[str, Any]] = None

@@ -694,12 +694,14 @@ function setVoiceState(state) {
 
 async function sendVoiceQuery(textQuery) {
   try {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Session-ID': sessionId,
+      ...getAuthHeaders()
+    };
     const res = await fetch(`${API_BASE}/voice`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Session-ID': sessionId
-      },
+      headers: headers,
       body: JSON.stringify({
         direct_transcript: textQuery,
         session_id: sessionId
@@ -730,11 +732,13 @@ async function sendVoiceAudio(audioBlob) {
     formData.append('audio_file', audioBlob, 'voice_query.webm');
     formData.append('session_id', sessionId);
 
+    const headers = {
+      'X-Session-ID': sessionId,
+      ...getAuthHeaders()
+    };
     const res = await fetch(`${API_BASE}/voice`, {
       method: 'POST',
-      headers: {
-        'X-Session-ID': sessionId
-      },
+      headers: headers,
       body: formData
     });
 
@@ -900,6 +904,52 @@ function displayVoiceResponse(data) {
     audioPlayer.onended = () => setVoiceState('idle');
   } else {
     speakNativeText(data.reply_text);
+  }
+
+  // Handle Voice Q&A Cycle Tracking Actions
+  const cycleActionBox = document.getElementById('voiceCycleActionBox');
+  const cycleSummaryText = document.getElementById('voiceCycleSummaryText');
+  const cycleBtnRow = document.getElementById('voiceCycleBtnRow');
+  const cycleSavedBadge = document.getElementById('voiceCycleSavedBadge');
+  const cycleYesBtn = document.getElementById('voiceCycleYesBtn');
+  const cycleNoBtn = document.getElementById('voiceCycleNoBtn');
+
+  if (cycleActionBox) {
+    if (data.cycle_action) {
+      cycleActionBox.style.display = 'block';
+      if (data.cycle_action.status === 'pending_confirmation') {
+        const summary = data.cycle_action.summary || 'তারিখ নিশ্চিতকরণ';
+        if (cycleSummaryText) cycleSummaryText.textContent = summary;
+        if (cycleBtnRow) cycleBtnRow.style.display = 'flex';
+        if (cycleSavedBadge) cycleSavedBadge.style.display = 'none';
+
+        if (cycleYesBtn) {
+          cycleYesBtn.onclick = () => {
+            primeAudioPlayback();
+            setVoiceState('thinking');
+            sendVoiceQuery('হ্যাঁ, সংরক্ষণ করো');
+          };
+        }
+        if (cycleNoBtn) {
+          cycleNoBtn.onclick = () => {
+            primeAudioPlayback();
+            setVoiceState('thinking');
+            sendVoiceQuery('না, বাতিল');
+          };
+        }
+      } else if (data.cycle_action.status === 'saved') {
+        if (cycleBtnRow) cycleBtnRow.style.display = 'none';
+        if (cycleSavedBadge) cycleSavedBadge.style.display = 'flex';
+        if (typeof fetchPeriods === 'function') {
+          fetchPeriods();
+        }
+        showToast('🩸 পিরিয়ডের তথ্য সংরক্ষিত হয়েছে!');
+      } else {
+        cycleActionBox.style.display = 'none';
+      }
+    } else {
+      cycleActionBox.style.display = 'none';
+    }
   }
 }
 
